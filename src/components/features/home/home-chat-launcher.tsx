@@ -6,7 +6,6 @@ import { useActiveBackend } from "#/contexts/active-backend-context";
 import { useCreateConversation } from "#/hooks/mutation/use-create-conversation";
 import { useLocalWorkspaces } from "#/hooks/query/use-local-workspaces";
 import { useModelInterceptor } from "#/hooks/chat/use-model-interceptor";
-import { useLlmConfigured } from "#/hooks/use-llm-configured";
 import { HOME_PROMPT_DRAFT_KEY } from "#/hooks/chat/use-draft-persistence";
 import { useChatAttachmentUpload } from "#/hooks/chat/use-chat-attachment-upload";
 import { useConversationStore } from "#/stores/conversation-store";
@@ -64,11 +63,8 @@ export function HomeChatLauncher() {
     useCreateConversation();
   const isCreatingElsewhere = useIsCreatingConversation();
   const isCreating = isPending || isCreatingElsewhere;
-  const { isConfigured: isLlmConfigured, isLoading: isLlmConfigLoading } =
-    useLlmConfigured();
-  // Block sending entirely when there's no usable LLM; the banner above the
-  // launcher (rendered by the home route) explains it and offers setup.
-  const llmBlocked = !isLlmConfigLoading && !isLlmConfigured;
+  // Model is baked into defaults; don't block the launcher on LLM setup.
+  const llmBlocked = false;
   const { images, files, imagesMarkedUploadAsFile, clearAllFiles } =
     useConversationStore();
   const { handleUpload } = useChatAttachmentUpload();

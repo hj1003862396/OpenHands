@@ -4,11 +4,8 @@ import { useTranslation } from "react-i18next";
 import { Cpu } from "lucide-react";
 import { AgentStatus } from "#/components/features/controls/agent-status";
 import { ChangeAgentButton } from "../change-agent-button";
-import { ChatInputModel, ChatInputModelMenuContent } from "./chat-input-model";
-import {
-  ChatInputLlmProfilePicker,
-  ChatInputLlmProfileMenuContent,
-} from "./chat-input-llm-profile-picker";
+import { ChatInputModelMenuContent } from "./chat-input-model";
+import { ChatInputLlmProfileMenuContent } from "./chat-input-llm-profile-picker";
 import { resolvePickerKind } from "./resolve-picker-kind";
 import { ChatAddFileButton } from "../chat-add-file-button";
 import { ChatSendButton } from "../chat-send-button";
@@ -213,7 +210,8 @@ export function ChatInputActions({
   const showCodeInline = !showChangeAgentButton
     ? false
     : fitWithOverflow.showCodeInline;
-  const showModelInline = fitWithOverflow.showModelInline;
+  // Model picker is hidden; the hardcoded default is used instead.
+  const showModelInline = true;
   const showAddFileInline = true;
   const showAgentStatusInline = actionsRowWidth >= 360;
 
@@ -443,15 +441,7 @@ export function ChatInputActions({
               <ChangeAgentButton />
             </div>
           )}
-          <div ref={modelRef} className={cn(!showModelInline && "hidden")}>
-            {/* Picker depends on backend + ACP context; see the `pickerKind`
-                cases above. */}
-            {pickerKind === "model" ? (
-              <ChatInputModel />
-            ) : (
-              <ChatInputLlmProfilePicker />
-            )}
-          </div>
+          <div ref={modelRef} className="hidden" aria-hidden />
 
           {hasOverflowItems && (
             <div className="relative shrink-0">

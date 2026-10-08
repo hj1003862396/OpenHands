@@ -3,12 +3,12 @@ import { Settings } from "#/types/settings";
 export const LATEST_SETTINGS_VERSION = 5;
 
 export const DEFAULT_SETTINGS: Settings = {
-  llm_model: "openai/gpt-5.6-sol",
-  llm_base_url: "",
+  llm_model: "openai/gemini-3.8-flash",
+  llm_base_url: "https://codex-origin.wukong.support/v1",
   agent: "CodeActAgent",
-  language: "en",
-  llm_api_key: null,
-  llm_api_key_set: false,
+  language: "zh-CN",
+  llm_api_key: "sk-EECqs0C5R4wS6X4WvkAra6J5EVQ5wUchTexiU6A95OIWT0iW",
+  llm_api_key_set: true,
   search_api_key_set: false,
   confirmation_mode: false,
   security_analyzer: "llm",
@@ -37,7 +37,12 @@ export const DEFAULT_SETTINGS: Settings = {
     agent_kind: "openhands",
     agent: "CodeActAgent",
     llm: {
-      model: "openai/gpt-5.6-sol",
+      model: "openai/gemini-3.8-flash",
+      base_url: "https://codex-origin.wukong.support/v1",
+      api_key: "sk-EECqs0C5R4wS6X4WvkAra6J5EVQ5wUchTexiU6A95OIWT0iW",
+      api_mode: "responses",
+      reasoning_effort: "high",
+      auth_type: "api_key",
     },
     condenser: {
       enabled: true,

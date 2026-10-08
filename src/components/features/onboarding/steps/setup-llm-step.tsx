@@ -21,7 +21,7 @@ interface SetupLlmStepProps {
  * override marks the model dirty so the Next button persists the suggested
  * default immediately.
  */
-export const ONBOARDING_DEFAULT_LLM_MODEL = "openai/gpt-5.6-sol";
+export const ONBOARDING_DEFAULT_LLM_MODEL = "openai/gemini-3.8-flash";
 
 /**
  * Step 2: embed the LLM settings form. The screen runs in `embedded`

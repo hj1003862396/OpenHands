@@ -505,8 +505,8 @@ export function LlmSettingsLocalView() {
               // while keeping secret/base URL fields blank for a fresh profile.
               {
                 "llm.model": DEFAULT_SETTINGS.llm_model,
-                "llm.api_key": "",
-                "llm.base_url": "",
+                "llm.api_key": DEFAULT_SETTINGS.llm_api_key ?? "",
+                "llm.base_url": DEFAULT_SETTINGS.llm_base_url,
                 [LLM_PROVIDER_CONNECTION_KEY]: "",
                 [LLM_AUTH_TYPE_KEY]: LLM_AUTH_TYPE_API_KEY,
                 [LLM_SUBSCRIPTION_VENDOR_KEY]: OPENAI_SUBSCRIPTION_VENDOR,
