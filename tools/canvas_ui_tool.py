@@ -156,3 +156,59 @@ register_tool("canvas_ui", CanvasUITool)
 # this once the SDK registers its builtins for remote conversations.
 if FinishTool.__name__ not in list_registered_tools():
     register_tool(FinishTool.__name__, FinishTool)
+
+
+# Client-tool schemas are process-global: the SDK rejects a same-name
+# re-registration when `parameters` differs at all, including nested
+# `description` strings. Rebranding those strings (or resuming an older
+# conversation after a frontend tweak) then 422s every later
+# POST /conversations. Treat description-only drift as the same schema so
+# structural changes still conflict but copy edits do not.
+def _patch_client_tool_schema_fingerprint() -> None:
+    import copy
+
+    from openhands.sdk.tool import client_tool as _client_tool
+
+    def _strip_descriptions(value):
+        if isinstance(value, dict):
+            return {
+                key: _strip_descriptions(item)
+                for key, item in value.items()
+                if key != "description"
+            }
+        if isinstance(value, list):
+            return [_strip_descriptions(item) for item in value]
+        return value
+
+    def _schemas_structurally_equal(left, right) -> bool:
+        return _strip_descriptions(left) == _strip_descriptions(right)
+
+    original = _client_tool._get_client_action_type
+
+    def _get_client_action_type_lenient(name, schema):
+        with _client_tool._client_action_lock:
+            existing = _client_tool._client_action_types.get(name)
+            if existing is not None:
+                prior = _client_tool._client_action_schemas[name]
+                if prior == schema or _schemas_structurally_equal(prior, schema):
+                    return existing
+                raise _client_tool.ClientToolSchemaConflictError(
+                    f"Client tool '{name}' is already registered with a different "
+                    "parameters schema. Client tool names must map to a single, "
+                    "stable schema within a process."
+                )
+            action_type = _client_tool.Action.from_mcp_schema(
+                model_name=f"ClientAction_{name}",
+                schema=schema,
+            )
+            _client_tool._client_action_types[name] = action_type
+            _client_tool._client_action_schemas[name] = copy.deepcopy(schema)
+            return action_type
+
+    # Keep a stable identity if this module is imported twice in one process.
+    if getattr(original, "__name__", "") == "_get_client_action_type_lenient":
+        return
+    _client_tool._get_client_action_type = _get_client_action_type_lenient
+
+
+_patch_client_tool_schema_fingerprint()

@@ -68,8 +68,12 @@ export const LAUNCH_CHILD_CONVERSATION_CLIENT_TOOL: ClientToolSpec = {
       target: {
         type: "string",
         enum: [...CHILD_CONVERSATION_TARGETS],
+        // Parameter descriptions are part of the agent-server's process-global
+        // client-tool schema fingerprint. Do NOT rebrand product names here —
+        // a changed string 422s every later POST /conversations until restart,
+        // and fights resumed conversations that still carry the old schema.
         description:
-          "Where the child runs. 'local' reuses this machine and this conversation's workspace; 'cloud' runs in an isolated skillsdog Cloud sandbox.",
+          "Where the child runs. 'local' reuses this machine and this conversation's workspace; 'cloud' runs in an isolated OpenHands Cloud sandbox.",
       },
       task: {
         type: "string",

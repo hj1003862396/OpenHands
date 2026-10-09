@@ -1233,11 +1233,14 @@ export function buildStartConversationRequest(
       ? { agent_profile_id: options.agentProfileId }
       : { agent_settings: agentSettings }),
     workspace: conversationSettings.workspace,
-    // The agent-server caches each client tool's schema per tool *name* for the
-    // life of the process and rejects a re-registration with a different schema
-    // (`ClientToolSchemaConflictError`). Editing either schema below therefore
-    // requires restarting a long-running dev agent-server before new
-    // conversations can start.
+    // The agent-server caches each client tool's *parameters* schema (including
+    // nested property descriptions) per tool *name* for the life of the process
+    // and rejects a re-registration with a different schema
+    // (`ClientToolSchemaConflictError`). Editing either parameters object below
+    // — even a description string — therefore 422s new conversations until the
+    // long-running dev agent-server is restarted, and conflicts with resumed
+    // conversations that still carry the prior schema. Keep parameter text
+    // schema-stable; brand only the top-level tool `description`.
     client_tools:
       launchAgentKind === "openhands"
         ? [CANVAS_UI_CLIENT_TOOL, LAUNCH_CHILD_CONVERSATION_CLIENT_TOOL]

@@ -43,4 +43,12 @@ describe("canvas_ui client tool", () => {
       'register_tool("canvas_ui", CanvasUITool)',
     );
   });
+
+  it("patches client-tool schema fingerprinting to ignore description drift", () => {
+    // Branding nested parameter descriptions used to 422 every later
+    // POST /conversations (ClientToolSchemaConflictError). The startup import
+    // of tools/canvas_ui_tool.py installs a lenient comparer.
+    expect(legacyToolSource).toContain("_patch_client_tool_schema_fingerprint");
+    expect(legacyToolSource).toContain("_strip_descriptions");
+  });
 });
