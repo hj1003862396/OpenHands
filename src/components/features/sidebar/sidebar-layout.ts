@@ -80,7 +80,7 @@ export function sidebarNavLabelClassName(collapsed: boolean): string {
 }
 
 export const SIDEBAR_ICON_BUTTON_CLASS = cn(
-  "inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md",
+  "oh-press inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md",
   navInteractiveTransitionClassName,
   "cursor-pointer",
 );

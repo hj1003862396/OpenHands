@@ -71,6 +71,7 @@ export function SidebarRailBody({
               logoClassName="max-w-none"
               showWordmark={!collapsed}
               className={cn(
+                "oh-press",
                 collapsed
                   ? SIDEBAR_ICON_SLOT_CLASS
                   : "h-9 min-w-0 overflow-visible",
