@@ -69,7 +69,12 @@ export function SidebarRailBody({
               logoWidth={SIDEBAR_LOGO_WIDTH}
               logoHeight={SIDEBAR_LOGO_HEIGHT}
               logoClassName="max-w-none"
-              className={cn(SIDEBAR_ICON_SLOT_CLASS, "overflow-visible")}
+              showWordmark={!collapsed}
+              className={cn(
+                collapsed
+                  ? SIDEBAR_ICON_SLOT_CLASS
+                  : "h-9 min-w-0 overflow-visible",
+              )}
             />
           </div>
           {collapsed && showCollapseToggle ? (

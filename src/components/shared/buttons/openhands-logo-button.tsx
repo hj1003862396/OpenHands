@@ -13,6 +13,8 @@ export type OpenHandsLogoButtonProps = {
   logoClassName?: string;
   logoWidth?: number;
   logoHeight?: number;
+  /** Show the skillsdog.com wordmark to the right of the logo. */
+  showWordmark?: boolean;
 };
 
 export function OpenHandsLogoButton({
@@ -20,16 +22,18 @@ export function OpenHandsLogoButton({
   logoClassName,
   logoWidth = DEFAULT_LOGO_WIDTH,
   logoHeight = DEFAULT_LOGO_HEIGHT,
+  showWordmark = true,
 }: OpenHandsLogoButtonProps = {}) {
   const { t } = useTranslation("openhands");
 
   const ariaLabel = t(I18nKey.BRANDING$OPENHANDS_LOGO);
+  const wordmark = t(I18nKey.BRANDING$SITE);
 
   return (
     <NavigationLink
       to="/conversations"
       aria-label={ariaLabel}
-      className={cn(className)}
+      className={cn("inline-flex min-w-0 items-center gap-2", className)}
     >
       <img
         src={skLogo}
@@ -38,6 +42,11 @@ export function OpenHandsLogoButton({
         alt=""
         className={cn("shrink-0 object-contain", logoClassName)}
       />
+      {showWordmark ? (
+        <span className="truncate text-sm font-medium tracking-tight text-white">
+          {wordmark}
+        </span>
+      ) : null}
     </NavigationLink>
   );
 }

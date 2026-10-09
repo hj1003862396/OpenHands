@@ -7071,6 +7071,23 @@
     "uk": "skillsdog лого",
     "ca": "Logotip d'skillsdog"
   },
+  "BRANDING$SITE": {
+    "en": "skillsdog.com",
+    "ja": "skillsdog.com",
+    "zh-CN": "skillsdog.com",
+    "zh-TW": "skillsdog.com",
+    "ko-KR": "skillsdog.com",
+    "de": "skillsdog.com",
+    "no": "skillsdog.com",
+    "it": "skillsdog.com",
+    "pt": "skillsdog.com",
+    "es": "skillsdog.com",
+    "ar": "skillsdog.com",
+    "fr": "skillsdog.com",
+    "tr": "skillsdog.com",
+    "uk": "skillsdog.com",
+    "ca": "skillsdog.com"
+  },
   "ERROR$GENERIC": {
     "en": "An error occurred",
     "ja": "エラーが発生しました",
