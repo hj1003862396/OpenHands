@@ -44,7 +44,10 @@ import ConfirmationModeEnabled from "./confirmation-mode-enabled";
 import { useTaskPolling } from "#/hooks/query/use-task-polling";
 import { matchesPendingConversationId } from "#/utils/pending-task-message-link";
 import {
+  isACPToolCallEvent,
+  isActionEvent,
   isMessageEvent,
+  isObservationEvent,
   isStreamingDeltaEvent,
   isUserMessageEvent,
 } from "#/types/agent-server/type-guards";
@@ -294,7 +297,9 @@ export function ChatInterface() {
     }
   }, [awaitingAgentReply, curAgentState, isPlanningAgentRunning]);
 
-  const hasAssistantTextSinceLastUser = React.useMemo(() => {
+  // Any visible agent output after the latest user message should clear
+  // 「正在处理」— assistant text, streaming deltas, skill/tool actions, etc.
+  const hasAgentVisibleOutputSinceLastUser = React.useMemo(() => {
     for (let index = allConversationEvents.length - 1; index >= 0; index -= 1) {
       const event = allConversationEvents[index];
       if (isUserMessageEvent(event)) {
@@ -307,6 +312,13 @@ export function ChatInterface() {
           return true;
         }
         continue;
+      }
+      if (
+        isActionEvent(event) ||
+        isACPToolCallEvent(event) ||
+        isObservationEvent(event)
+      ) {
+        return true;
       }
       if (isMessageEvent(event) && event.llm_message.role === "assistant") {
         const content = event.llm_message.content;
@@ -324,13 +336,13 @@ export function ChatInterface() {
   }, [allConversationEvents]);
 
   React.useEffect(() => {
-    if (hasAssistantTextSinceLastUser) {
+    if (hasAgentVisibleOutputSinceLastUser) {
       setAwaitingAgentReply(false);
     }
-  }, [hasAssistantTextSinceLastUser]);
+  }, [hasAgentVisibleOutputSinceLastUser]);
 
   const showProcessingStatus =
-    !hasAssistantTextSinceLastUser &&
+    !hasAgentVisibleOutputSinceLastUser &&
     (awaitingAgentReply ||
       hasPendingUserMessages ||
       curAgentState === AgentState.RUNNING ||
