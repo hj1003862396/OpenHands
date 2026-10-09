@@ -134,15 +134,22 @@ code {
 
 /* Apple-style pilot: glass rail over the cool-grey shell. */
 .oh-shell-wash {
-  background-image: radial-gradient(
-    900px 420px at 18% -8%,
-    color-mix(in srgb, #c9b974 16%, transparent),
-    transparent 62%
-  );
+  background-color: var(--cool-grey-950);
+  background-image:
+    radial-gradient(
+      720px 480px at 8% 0%,
+      color-mix(in srgb, #c9b974 28%, transparent),
+      transparent 62%
+    ),
+    linear-gradient(
+      90deg,
+      color-mix(in srgb, var(--cool-grey-700) 70%, var(--cool-grey-950)) 0,
+      var(--cool-grey-950) 360px
+    );
 }
 
 .oh-glass-surface {
-  background-color: color-mix(in srgb, var(--cool-grey-950) 72%, transparent);
+  background-color: color-mix(in srgb, var(--cool-grey-950) 64%, transparent);
   -webkit-backdrop-filter: blur(20px) saturate(180%);
   backdrop-filter: blur(20px) saturate(180%);
 }
