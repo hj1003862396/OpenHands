@@ -1,39 +1,24 @@
-import { useState } from "react";
 import toast from "react-hot-toast";
 import { useTranslation } from "react-i18next";
 import { CustomChatInput } from "#/components/features/chat/custom-chat-input";
 import { useActiveBackend } from "#/contexts/active-backend-context";
 import { useCreateConversation } from "#/hooks/mutation/use-create-conversation";
-import { useLocalWorkspaces } from "#/hooks/query/use-local-workspaces";
 import { useModelInterceptor } from "#/hooks/chat/use-model-interceptor";
 import { HOME_PROMPT_DRAFT_KEY } from "#/hooks/chat/use-draft-persistence";
 import { useChatAttachmentUpload } from "#/hooks/chat/use-chat-attachment-upload";
 import { useConversationStore } from "#/stores/conversation-store";
-import type { WorkspaceMode } from "#/api/conversation-metadata-store";
 import { setPendingTaskAttachments } from "#/stores/pending-task-attachments-store";
 import { enqueueHomeTaskPendingMessage } from "#/utils/enqueue-home-task-pending-message";
 import { sendMessageWithAttachments } from "#/utils/send-message-with-attachments";
 import { useNavigation } from "#/context/navigation-context";
 import { useIsCreatingConversation } from "#/hooks/use-is-creating-conversation";
-import { Branch, GitRepository } from "#/types/git";
-import { Provider } from "#/types/settings";
-import { LocalWorkspace } from "#/types/workspace";
 import { I18nKey } from "#/i18n/declaration";
 import {
   displayErrorToast,
   TOAST_OPTIONS,
 } from "#/utils/custom-toast-handlers";
-import { getWorkspacesUnsupportedMessage } from "#/utils/workspaces-compatibility";
-import {
-  readStoredLocalWorkspaceMode,
-  writeStoredLocalWorkspaceMode,
-} from "#/utils/workspace-mode";
 import { HomeHeaderTitle } from "./home-header/home-header-title";
 import { SkillShareCodeControls } from "./skill-share-code-controls";
-import { OpenLauncherButton } from "./open-launcher-button";
-import { OpenWorkspaceDialog } from "./open-workspace-dialog";
-import { OpenRepositoryDialog } from "./open-repository-dialog";
-import { HomeGitControlBarPreview } from "./home-git-control-bar-preview";
 
 export function HomeChatLauncher() {
   const { t } = useTranslation("openhands");
@@ -41,16 +26,6 @@ export function HomeChatLauncher() {
   const { navigate } = useNavigation();
   const isLocal = backend.kind === "local";
 
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [pendingWorkspace, setPendingWorkspace] =
-    useState<LocalWorkspace | null>(null);
-  const [pendingRepository, setPendingRepository] =
-    useState<GitRepository | null>(null);
-  const [pendingBranch, setPendingBranch] = useState<Branch | null>(null);
-  const [pendingProvider, setPendingProvider] = useState<Provider | null>(null);
-  const [workspaceMode, setWorkspaceModeState] = useState<WorkspaceMode>(() =>
-    readStoredLocalWorkspaceMode(),
-  );
   const { mutateAsync: createConversation, isPending } =
     useCreateConversation();
   const isCreatingElsewhere = useIsCreatingConversation();
@@ -60,19 +35,6 @@ export function HomeChatLauncher() {
   const { images, files, imagesMarkedUploadAsFile, clearAllFiles } =
     useConversationStore();
   const { handleUpload } = useChatAttachmentUpload();
-  const { error: workspacesError } = useLocalWorkspaces({ enabled: isLocal });
-  const workspacesUnsupportedMessage = isLocal
-    ? getWorkspacesUnsupportedMessage(workspacesError, t)
-    : null;
-
-  const setWorkspaceMode = (mode: WorkspaceMode) => {
-    setWorkspaceModeState(mode);
-    if (isLocal) writeStoredLocalWorkspaceMode(mode);
-  };
-
-  const hasSelection = isLocal
-    ? !!pendingWorkspace
-    : !!pendingRepository && !!pendingBranch;
 
   const handleSubmit = (message: string) => {
     const trimmed = message.trim();
@@ -89,32 +51,15 @@ export function HomeChatLauncher() {
       files: [...files],
     };
 
-    // Workspace/repo are optional — match the "Start from scratch" flow which
-    // creates a conversation with no working dir and no repo. Build the
-    // payload from whatever is selected.
-    // When attachments are present the first user message is sent afterward
-    // via sendMessageWithAttachments / flushPendingTaskAttachments. Passing
-    // query here would create a duplicate text-only initial_message.
-    let variables: Parameters<typeof createConversation>[0] = {
+    // Workspace/repo selector is hidden on the home page — create from scratch
+    // (no working dir / no repo). When attachments are present the first user
+    // message is sent afterward via sendMessageWithAttachments /
+    // flushPendingTaskAttachments. Passing query here would create a
+    // duplicate text-only initial_message.
+    const variables: Parameters<typeof createConversation>[0] = {
       query: hasAttachments ? undefined : trimmed || undefined,
       entryPoint: "home_chat_launcher",
     };
-    if (isLocal && pendingWorkspace) {
-      variables = {
-        ...variables,
-        workingDir: pendingWorkspace.path,
-        workspaceMode,
-      };
-    } else if (!isLocal && pendingRepository && pendingBranch) {
-      variables = {
-        ...variables,
-        repository: {
-          name: pendingRepository.full_name,
-          gitProvider: pendingRepository.git_provider,
-          branch: pendingBranch.name,
-        },
-      };
-    }
 
     // Loading toast gives the user a clear signal that the request is in
     // flight; dismissed precisely once the mutation resolves.
@@ -227,55 +172,9 @@ export function HomeChatLauncher() {
         </div>
 
         <div className="flex flex-col items-start gap-2">
-          <div className="flex items-center justify-start gap-2">
-            {hasSelection ? (
-              <HomeGitControlBarPreview
-                workspace={pendingWorkspace}
-                repository={pendingRepository}
-                branch={pendingBranch}
-                provider={pendingProvider}
-                workspaceMode={workspaceMode}
-                backendKind={backend.kind}
-                onRepoClick={() => setIsDialogOpen(true)}
-                onWorkspaceModeChange={setWorkspaceMode}
-              />
-            ) : (
-              <OpenLauncherButton
-                kind={isLocal ? "local" : "cloud"}
-                onClick={() => setIsDialogOpen(true)}
-                disabled={isCreating || Boolean(workspacesUnsupportedMessage)}
-                disabledTooltip={workspacesUnsupportedMessage}
-              />
-            )}
-          </div>
           <SkillShareCodeControls disabled={isCreating || llmBlocked} />
         </div>
       </div>
-
-      {isLocal ? (
-        <OpenWorkspaceDialog
-          isOpen={isDialogOpen}
-          onClose={() => setIsDialogOpen(false)}
-          onConfirm={(workspace) => {
-            setPendingWorkspace(workspace);
-            setPendingRepository(null);
-            setPendingBranch(null);
-            setPendingProvider(null);
-          }}
-        />
-      ) : (
-        <OpenRepositoryDialog
-          isOpen={isDialogOpen}
-          onClose={() => setIsDialogOpen(false)}
-          onConfirm={({ repository, branch, provider }) => {
-            setPendingRepository(repository);
-            setPendingBranch(branch);
-            setPendingProvider(provider ?? repository.git_provider);
-            setPendingWorkspace(null);
-            setWorkspaceModeState("local_repo");
-          }}
-        />
-      )}
     </div>
   );
 }

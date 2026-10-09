@@ -6,11 +6,6 @@ import toast from "react-hot-toast";
 
 import { HomeChatLauncher } from "#/components/features/home/home-chat-launcher";
 import AgentServerConversationService from "#/api/conversation-service/agent-server-conversation-service.api";
-import WorkspacesService from "#/api/workspaces-service/workspaces-service.api";
-import {
-  LAST_LOCAL_WORKSPACE_MODE_STORAGE_KEY,
-  writeStoredLocalWorkspaceMode,
-} from "#/utils/workspace-mode";
 
 const mockNavigate = vi.fn();
 const mockUseActiveBackend = vi.fn();
@@ -18,7 +13,6 @@ const sendMessageWithAttachments = vi.fn();
 const mockClearAllFiles = vi.fn();
 const enqueueHomeTaskPendingMessage = vi.fn();
 const mockDisplayErrorToast = vi.fn();
-const mockUseLlmConfigured = vi.fn();
 
 let mockImages: File[] = [];
 let mockFiles: File[] = [];
@@ -68,10 +62,6 @@ vi.mock("#/contexts/active-backend-context", () => ({
   useActiveBackend: () => mockUseActiveBackend(),
 }));
 
-vi.mock("#/hooks/use-llm-configured", () => ({
-  useLlmConfigured: () => mockUseLlmConfigured(),
-}));
-
 vi.mock("#/hooks/use-is-creating-conversation", () => ({
   useIsCreatingConversation: () => false,
 }));
@@ -105,113 +95,12 @@ vi.mock("#/components/features/chat/custom-chat-input", () => ({
   ),
 }));
 
-// Stub the selection dialogs. We mirror the real component's contract:
-// `onConfirm(selection)` is followed by `onClose()` so the parent's pending
-// state is set and the dialog disappears.
-vi.mock("#/components/features/home/open-workspace-dialog", () => ({
-  OpenWorkspaceDialog: ({
-    isOpen,
-    onClose,
-    onConfirm,
-  }: {
-    isOpen: boolean;
-    onClose: () => void;
-    onConfirm: (w: { id: string; name: string; path: string }) => void;
-  }) =>
-    isOpen ? (
-      <button
-        type="button"
-        data-testid="stub-workspace-dialog-confirm"
-        onClick={() => {
-          onConfirm({ id: "/p/app", name: "app", path: "/p/app" });
-          onClose();
-        }}
-      >
-        confirm
-      </button>
-    ) : null,
-}));
-
-vi.mock("#/components/features/home/open-repository-dialog", () => ({
-  OpenRepositoryDialog: ({
-    isOpen,
-    onClose,
-    onConfirm,
-  }: {
-    isOpen: boolean;
-    onClose: () => void;
-    onConfirm: (s: {
-      repository: {
-        id: string;
-        full_name: string;
-        git_provider: "github";
-        is_public: boolean;
-      };
-      branch: { name: string };
-      provider: "github" | null;
-    }) => void;
-  }) =>
-    isOpen ? (
-      <button
-        type="button"
-        data-testid="stub-repo-dialog-confirm"
-        onClick={() => {
-          onConfirm({
-            repository: {
-              id: "1",
-              full_name: "org/repo",
-              git_provider: "github",
-              is_public: true,
-            },
-            branch: { name: "main" },
-            provider: "github",
-          });
-          onClose();
-        }}
-      >
-        confirm
-      </button>
-    ) : null,
-}));
-
-// HomeGitControlBarPreview pulls in settings + provider hooks we don't care
-// about for these tests. It's purely presentational once a selection is
-// confirmed, so a thin stub is sufficient.
-vi.mock("#/components/features/home/home-git-control-bar-preview", () => ({
-  HomeGitControlBarPreview: ({
-    workspaceMode,
-    backendKind,
-    onWorkspaceModeChange,
-  }: {
-    workspaceMode: "local_repo" | "new_worktree";
-    backendKind: "local" | "cloud";
-    onWorkspaceModeChange: (mode: "local_repo" | "new_worktree") => void;
-  }) => (
-    <div data-testid="stub-git-control-bar-preview">
-      <span data-testid="stub-workspace-mode">
-        {backendKind}:{workspaceMode}
-      </span>
-      <button
-        type="button"
-        data-testid="stub-workspace-mode-new-worktree"
-        onClick={() => onWorkspaceModeChange("new_worktree")}
-      >
-        New Worktree
-      </button>
-      <button
-        type="button"
-        data-testid="stub-workspace-mode-local-repo"
-        onClick={() => onWorkspaceModeChange("local_repo")}
-      >
-        Local Repo
-      </button>
-    </div>
-  ),
-}));
-
 vi.mock("#/components/features/home/skill-share-code-controls", () => ({
   SkillShareCodeControls: ({ disabled }: { disabled?: boolean }) => (
-    <div data-testid="skill-share-code-controls" data-disabled={disabled ? "true" : "false"} />
+    <div
+      data-testid="skill-share-code-controls"
+      data-disabled={disabled ? "true" : "false"}
+    />
   ),
 }));
 
@@ -279,10 +168,6 @@ describe("HomeChatLauncher", () => {
     mockImages = [];
     mockFiles = [];
     mockUseActiveBackend.mockReturnValue(localBackend);
-    mockUseLlmConfigured.mockReturnValue({
-      isConfigured: true,
-      isLoading: false,
-    });
     enqueueHomeTaskPendingMessage.mockResolvedValue(undefined);
     sendMessageWithAttachments.mockResolvedValue({
       text: "hello world",
@@ -291,16 +176,10 @@ describe("HomeChatLauncher", () => {
       fileUrls: [],
       timestamp: "2020-01-01T00:00:00.000Z",
     });
-    window.localStorage.removeItem(LAST_LOCAL_WORKSPACE_MODE_STORAGE_KEY);
-    vi.spyOn(WorkspacesService, "listWorkspaces").mockResolvedValue({
-      workspaces: [],
-      workspaceParents: [],
-    });
   });
 
   afterEach(() => {
     toast.remove();
-    window.localStorage.removeItem(LAST_LOCAL_WORKSPACE_MODE_STORAGE_KEY);
   });
 
   it("creates a conversation with just the typed query and navigates when no workspace is selected", async () => {
@@ -320,168 +199,6 @@ describe("HomeChatLauncher", () => {
     });
     await waitFor(() =>
       expect(mockNavigate).toHaveBeenCalledWith("/conversations/conv-abc"),
-    );
-  });
-
-  it("disables the chat input and won't create a conversation when no LLM is configured", async () => {
-    mockUseLlmConfigured.mockReturnValue({
-      isConfigured: false,
-      isLoading: false,
-    });
-    const createSpy = vi
-      .spyOn(AgentServerConversationService, "createConversation")
-      .mockResolvedValue(makeConversationResponse());
-
-    renderLauncher();
-
-    // The send is disabled, so the agent can't be handed a request it can't run.
-    expect(screen.getByTestId("stub-chat-submit")).toBeDisabled();
-    expect(createSpy).not.toHaveBeenCalled();
-  });
-
-  it("passes the picked workspace path as working_dir on a local backend", async () => {
-    const createSpy = vi
-      .spyOn(AgentServerConversationService, "createConversation")
-      .mockResolvedValue(
-        makeConversationResponse({ app_conversation_id: "conv-ws" }),
-      );
-
-    renderLauncher();
-    const user = userEvent.setup();
-
-    await user.click(screen.getByTestId("open-workspace-button"));
-    await user.click(
-      await screen.findByTestId("stub-workspace-dialog-confirm"),
-    );
-    await user.click(screen.getByTestId("stub-chat-submit"));
-
-    await waitFor(() => expect(createSpy).toHaveBeenCalledTimes(1));
-    expect(createSpy).toHaveBeenCalledWith({
-      initialUserMsg: "hello world",
-      metadata: null,
-      workingDirOverride: "/p/app",
-      workspaceMode: "local_repo",
-    });
-    await waitFor(() =>
-      expect(mockNavigate).toHaveBeenCalledWith("/conversations/conv-ws"),
-    );
-  });
-
-  it("passes the picked workspace path with new-worktree mode when selected", async () => {
-    const createSpy = vi
-      .spyOn(AgentServerConversationService, "createConversation")
-      .mockResolvedValue(
-        makeConversationResponse({ app_conversation_id: "conv-wt" }),
-      );
-
-    renderLauncher();
-    const user = userEvent.setup();
-
-    await user.click(screen.getByTestId("open-workspace-button"));
-    await user.click(
-      await screen.findByTestId("stub-workspace-dialog-confirm"),
-    );
-    expect(screen.getByTestId("stub-workspace-mode")).toHaveTextContent(
-      "local:local_repo",
-    );
-
-    await user.click(screen.getByTestId("stub-workspace-mode-new-worktree"));
-    expect(screen.getByTestId("stub-workspace-mode")).toHaveTextContent(
-      "local:new_worktree",
-    );
-    await user.click(screen.getByTestId("stub-chat-submit"));
-
-    await waitFor(() => expect(createSpy).toHaveBeenCalledTimes(1));
-    expect(createSpy).toHaveBeenCalledWith({
-      initialUserMsg: "hello world",
-      metadata: null,
-      workingDirOverride: "/p/app",
-      workspaceMode: "new_worktree",
-    });
-    await waitFor(() =>
-      expect(mockNavigate).toHaveBeenCalledWith("/conversations/conv-wt"),
-    );
-  });
-
-  it("restores and updates the last selected local workspace mode", async () => {
-    writeStoredLocalWorkspaceMode("new_worktree");
-    const { unmount } = renderLauncher();
-    const user = userEvent.setup();
-
-    await user.click(screen.getByTestId("open-workspace-button"));
-    await user.click(
-      await screen.findByTestId("stub-workspace-dialog-confirm"),
-    );
-
-    expect(screen.getByTestId("stub-workspace-mode")).toHaveTextContent(
-      "local:new_worktree",
-    );
-
-    await user.click(screen.getByTestId("stub-workspace-mode-local-repo"));
-    expect(screen.getByTestId("stub-workspace-mode")).toHaveTextContent(
-      "local:local_repo",
-    );
-
-    unmount();
-    renderLauncher();
-
-    await user.click(screen.getByTestId("open-workspace-button"));
-    await user.click(
-      await screen.findByTestId("stub-workspace-dialog-confirm"),
-    );
-
-    expect(screen.getByTestId("stub-workspace-mode")).toHaveTextContent(
-      "local:local_repo",
-    );
-  });
-
-  it("disables the local workspace launcher when the agent server is too old", async () => {
-    vi.spyOn(WorkspacesService, "listWorkspaces").mockRejectedValue({
-      code: "AGENT_SERVER_VERSION_TOO_OLD",
-      feature: "workspaces",
-      requiredVersion: "1.23.0",
-      actualVersion: "1.22.1",
-    });
-
-    renderLauncher();
-    const user = userEvent.setup();
-    await waitFor(() =>
-      expect(screen.getByTestId("open-workspace-button")).toBeDisabled(),
-    );
-    const button = screen.getByTestId("open-workspace-button");
-    await user.hover(button.parentElement ?? button);
-
-    expect(
-      await screen.findByText("HOME$WORKSPACES_UNSUPPORTED_AGENT_SERVER"),
-    ).toBeInTheDocument();
-  });
-
-  it("passes the picked repository + branch payload on a cloud backend", async () => {
-    mockUseActiveBackend.mockReturnValue(cloudBackend);
-    const createSpy = vi
-      .spyOn(AgentServerConversationService, "createConversation")
-      .mockResolvedValue(
-        makeConversationResponse({ app_conversation_id: "conv-repo" }),
-      );
-
-    renderLauncher();
-    const user = userEvent.setup();
-
-    await user.click(screen.getByTestId("open-repository-button"));
-    await user.click(await screen.findByTestId("stub-repo-dialog-confirm"));
-    await user.click(screen.getByTestId("stub-chat-submit"));
-
-    await waitFor(() => expect(createSpy).toHaveBeenCalledTimes(1));
-    expect(createSpy).toHaveBeenCalledWith({
-      initialUserMsg: "hello world",
-      metadata: {
-        selected_repository: "org/repo",
-        selected_branch: "main",
-        git_provider: "github",
-      },
-    });
-    await waitFor(() =>
-      expect(mockNavigate).toHaveBeenCalledWith("/conversations/conv-repo"),
     );
   });
 
@@ -589,10 +306,14 @@ describe("HomeChatLauncher", () => {
     );
   });
 
-  it("renders skill share code controls and hides the plugin picker", () => {
+  it("renders skill share code controls and hides workspace/plugin pickers", () => {
     renderLauncher();
 
     expect(screen.getByTestId("skill-share-code-controls")).toBeInTheDocument();
     expect(screen.queryByTestId("open-plugin-picker")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("open-workspace-button")).not.toBeInTheDocument();
+    expect(
+      screen.queryByTestId("open-repository-button"),
+    ).not.toBeInTheDocument();
   });
 });
