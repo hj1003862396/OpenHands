@@ -52,10 +52,14 @@ describe("color themes", () => {
     // [data-agent-server-ui] variable rules (0,1,0), so the override wins even
     // when React 19 re-inserts the base stylesheet <link> after this tag.
     const styleEl = document.getElementById("oh-color-theme-override");
-    expect(styleEl?.textContent).toContain(
-      "[data-agent-server-ui][data-agent-server-ui] {",
+    const css = styleEl?.textContent ?? "";
+    expect(css).toContain("[data-agent-server-ui][data-agent-server-ui] {");
+    expect(css).toContain("[data-theme=dark][data-theme=dark] {");
+    const [scopeRule, darkRule] = css.split(
+      "[data-theme=dark][data-theme=dark]",
     );
-    expect(styleEl?.textContent).toContain("[data-theme=dark][data-theme=dark] {");
+    expect(scopeRule).not.toContain("--heroui-background");
+    expect(darkRule).toContain("--heroui-background");
 
     styleEl?.remove();
   });
@@ -88,9 +92,9 @@ describe("color themes", () => {
 
     applyColorTheme("openhands-neo");
 
-    const scopeRoot = screen.getByTestId("primary-button").closest(
-      "[data-agent-server-ui]",
-    ) as HTMLElement;
+    const scopeRoot = screen
+      .getByTestId("primary-button")
+      .closest("[data-agent-server-ui]") as HTMLElement;
 
     expect(scopeRoot.style.getPropertyValue("--oh-color-primary")).toBe(
       "#ffffff",

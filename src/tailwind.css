@@ -112,6 +112,9 @@
   --oh-border: var(--cool-grey-700);
   --oh-border-input: var(--cool-grey-700);   /* unified with --oh-border; same stroke weight everywhere */
   --oh-border-subtle: var(--cool-grey-800);  /* within-panel separators, list dividers */
+  --oh-border-hairline: color-mix(in srgb, white 10%, transparent);
+  --oh-hover-wash: color-mix(in srgb, white 10%, transparent);
+  --oh-edge-highlight: color-mix(in srgb, white 6%, transparent);
   --oh-separator: rgba(113, 120, 136, 0.5);
   --oh-focus: #ffffff;
   --oh-status-success: #1FBD53;
@@ -319,7 +322,7 @@ button.extension-module-card-interactive {
 /* Custom styles for contenteditable */
 .chat-input:empty:before {
   content: attr(data-placeholder);
-  color: var(--cool-grey-400);
+  color: var(--oh-muted);
   pointer-events: none;
   font-size: 16px;
   font-weight: 400;

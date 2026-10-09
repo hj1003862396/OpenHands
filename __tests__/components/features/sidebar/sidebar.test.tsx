@@ -16,6 +16,7 @@ import {
   type NavigationContextValue,
 } from "#/context/navigation-context";
 import { getPinnedHomeRouteKey } from "#/hooks/use-pinned-home-route";
+import { setAppearance } from "#/themes/appearance";
 import translations from "#/i18n/translation.json";
 
 // The global `useTranslation` mock in `vitest.setup.ts` returns the key
@@ -240,6 +241,7 @@ function renderSidebar(currentPath: string) {
 describe("Sidebar", () => {
   beforeEach(() => {
     window.localStorage.clear();
+    setAppearance("dark");
     // Zustand store is a module singleton; reset it so collapsed state from
     // a prior test doesn't bleed into this one.
     useSidebarStore.setState({ collapsed: false });
@@ -247,6 +249,7 @@ describe("Sidebar", () => {
 
   afterEach(() => {
     window.localStorage.clear();
+    setAppearance("dark");
     useSidebarStore.setState({ collapsed: false });
   });
 
@@ -299,6 +302,33 @@ describe("Sidebar", () => {
 
     // Assert: state flips back to expanded.
     expect(getDesktopSidebar(false).dataset.collapsed).toBe("false");
+  });
+
+  it("toggles appearance from the footer without expanding a collapsed rail", () => {
+    useSidebarStore.setState({ collapsed: true });
+    renderSidebar("/conversations");
+
+    const toggle = screen.getByTestId("sidebar-appearance-toggle");
+    expect(toggle).toHaveAttribute("aria-label", "Switch to light mode");
+    expect(toggle).toHaveAttribute("aria-pressed", "false");
+
+    fireEvent.click(toggle);
+
+    expect(getDesktopSidebar(true).dataset.collapsed).toBe("true");
+    expect(window.localStorage.getItem("openhands-appearance")).toBe("light");
+    expect(document.documentElement).toHaveAttribute("data-theme", "light");
+    expect(document.documentElement.style.colorScheme).toBe("light");
+    expect(toggle).toHaveAttribute("aria-label", "Switch to dark mode");
+    expect(toggle).toHaveAttribute("aria-pressed", "true");
+  });
+
+  it("keeps the appearance toggle available while the sidebar is expanded", () => {
+    renderSidebar("/conversations");
+
+    expect(screen.getByTestId("sidebar-appearance-toggle")).toHaveAttribute(
+      "aria-label",
+      "Switch to light mode",
+    );
   });
 
   it("expands the sidebar when collapsed rail empty space is clicked", () => {

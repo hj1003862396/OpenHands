@@ -102,7 +102,7 @@ export function HomeAutomationRunTooltip({
 
   return (
     <div className="flex w-[280px] flex-col gap-3 p-3">
-      <span className="break-words text-sm font-medium text-white">
+      <span className="break-words text-sm font-medium text-[var(--oh-foreground)]">
         {automation.name}
       </span>
 

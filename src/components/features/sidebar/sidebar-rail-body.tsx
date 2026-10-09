@@ -15,6 +15,7 @@ import {
   sidebarNavListClassName,
 } from "./sidebar-layout";
 import { useCanvasExtensionsRuntime } from "#/components/features/canvas-extensions/canvas-extensions-runtime";
+import { SidebarAppearanceToggle } from "./sidebar-appearance-toggle";
 const ICON_SIZE = 18;
 const SIDEBAR_LOGO_WIDTH = 28;
 const SIDEBAR_LOGO_HEIGHT = 28;
@@ -106,7 +107,7 @@ export function SidebarRailBody({
             className={cn(
               "hidden md:inline-flex ml-auto",
               SIDEBAR_ICON_BUTTON_CLASS,
-              "text-[var(--oh-muted)] hover:text-white hover:bg-[var(--oh-surface-raised)]",
+              "text-[var(--oh-muted)] hover:text-[var(--oh-foreground)] hover:bg-[var(--oh-surface-raised)]",
             )}
           >
             <ChevronLeft width={14} height={14} />
@@ -121,7 +122,7 @@ export function SidebarRailBody({
             className={cn(
               "inline-flex ml-auto",
               SIDEBAR_ICON_BUTTON_CLASS,
-              "text-[var(--oh-muted)] hover:text-white hover:bg-[var(--oh-surface-raised)]",
+              "text-[var(--oh-muted)] hover:text-[var(--oh-foreground)] hover:bg-[var(--oh-surface-raised)]",
             )}
           >
             <ChevronLeft width={14} height={14} />
@@ -151,6 +152,7 @@ export function SidebarRailBody({
       </nav>
 
       <SidebarConversationList collapsed={collapsed} />
+      <SidebarAppearanceToggle collapsed={collapsed} />
     </div>
   );
 }

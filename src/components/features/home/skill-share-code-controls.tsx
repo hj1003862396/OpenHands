@@ -32,7 +32,7 @@ function skillRedeemLaunchQuery(skillName: string): string {
 
 const pillButtonClassName = cn(
   "inline-flex flex-row items-center gap-1 rounded-full border border-transparent bg-transparent px-2 py-0.5",
-  "text-xs font-normal leading-4 text-white/50",
+  "text-xs font-normal leading-4 text-[var(--oh-muted)]",
   formControlTransitionClassName,
 );
 
@@ -168,7 +168,7 @@ export function SkillShareCodeControls({
             pillButtonClassName,
             isCreating
               ? "cursor-not-allowed opacity-50"
-              : "cursor-pointer hover:bg-white/5 hover:text-white/75",
+              : "cursor-pointer hover:bg-[var(--oh-hover-wash)] hover:text-[var(--oh-foreground)]",
           )}
         >
           <span className="flex h-3.5 w-3.5 shrink-0 items-center justify-center">
@@ -197,8 +197,8 @@ export function SkillShareCodeControls({
             disabled={isCreating}
             data-testid="use-skill-code-input"
             className={cn(
-              "h-7 w-[6.5rem] rounded-full border border-white/10 bg-transparent px-2.5 text-xs text-white/70 placeholder:text-white/30",
-              "outline-none focus:border-white/25",
+              "h-7 w-[6.5rem] rounded-full border border-[var(--oh-border-hairline)] bg-transparent px-2.5 text-xs text-[var(--oh-text-secondary)] placeholder:text-[var(--oh-text-dim)]",
+              "outline-none focus:border-[var(--oh-border)]",
               isCreating && "cursor-not-allowed opacity-50",
             )}
             aria-label="使用技能码"
@@ -212,7 +212,7 @@ export function SkillShareCodeControls({
               pillButtonClassName,
               isCreating || codeInput.trim().length !== 6
                 ? "cursor-not-allowed opacity-50"
-                : "cursor-pointer hover:bg-white/5 hover:text-white/75",
+                : "cursor-pointer hover:bg-[var(--oh-hover-wash)] hover:text-[var(--oh-foreground)]",
             )}
           >
             <span>使用技能码</span>
@@ -228,7 +228,7 @@ export function SkillShareCodeControls({
             onChange={(e) => setMintSkillName(e.target.value)}
             disabled={isCreating}
             className={cn(
-              "h-7 max-w-[14rem] rounded-full border border-white/10 bg-transparent px-2 text-xs text-white/60",
+              "h-7 max-w-[14rem] rounded-full border border-[var(--oh-border-hairline)] bg-transparent px-2 text-xs text-[var(--oh-text-secondary)]",
               isCreating && "cursor-not-allowed opacity-50",
             )}
             aria-label="为已有技能生成码"
@@ -252,7 +252,7 @@ export function SkillShareCodeControls({
               pillButtonClassName,
               isCreating || !mintSkillName
                 ? "cursor-not-allowed opacity-50"
-                : "cursor-pointer hover:bg-white/5 hover:text-white/75",
+                : "cursor-pointer hover:bg-[var(--oh-hover-wash)] hover:text-[var(--oh-foreground)]",
             )}
           >
             <span>生成技能码</span>

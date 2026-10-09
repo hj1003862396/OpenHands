@@ -43,7 +43,7 @@ export const formControlTransformTransitionClassName = cn(
 
 /** Muted icon/pill controls: instant foreground, fading shell on hover. */
 export const formControlMutedHoverClassName =
-  "hover:text-white hover:bg-white/10";
+  "hover:text-[var(--oh-foreground)] hover:bg-[var(--oh-hover-wash)]";
 
 /** Text/icon pill triggers in the chat input actions row. */
 export const chatInputPillButtonClassName = cn(
