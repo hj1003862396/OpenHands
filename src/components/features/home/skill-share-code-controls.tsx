@@ -26,7 +26,13 @@ import {
   formControlTransitionClassName,
 } from "#/utils/form-control-classes";
 
-const SKILL_CREATOR_LAUNCH_QUERY = "/skill-creator";
+const SKILL_CREATOR_LAUNCH_QUERY =
+  "/skill-creator\n\n请全程用简体中文与我交流，并创建技能。";
+
+/** Opening message when redeeming a share code into a new chat. */
+function skillRedeemLaunchQuery(skillName: string): string {
+  return `/${skillName}\n\n请全程用简体中文与我交流。`;
+}
 
 const pillButtonClassName = cn(
   "flex flex-row items-center gap-2 rounded-full px-2.5 py-1 text-white",
@@ -115,7 +121,7 @@ export function SkillShareCodeControls({
     void (async () => {
       try {
         const data = await createConversation({
-          query: `/${entry.skillName}`,
+          query: skillRedeemLaunchQuery(entry.skillName),
           workingDir: entry.workspacePath ?? undefined,
           workspaceMode: entry.workspacePath ? "local_repo" : undefined,
           entryPoint: "home_use_skill_code",
