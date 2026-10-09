@@ -1,5 +1,5 @@
 import { useTranslation } from "react-i18next";
-import OpenHandsLogo from "#/assets/branding/openhands-logo.svg?react";
+import skLogo from "#/assets/branding/sk-logo.png";
 import { NavigationLink } from "#/components/shared/navigation-link";
 import { I18nKey } from "#/i18n/declaration";
 import { cn } from "#/utils/utils";
@@ -31,10 +31,12 @@ export function OpenHandsLogoButton({
       aria-label={ariaLabel}
       className={cn(className)}
     >
-      <OpenHandsLogo
+      <img
+        src={skLogo}
         width={logoWidth}
         height={logoHeight}
-        className={cn("shrink-0", logoClassName)}
+        alt=""
+        className={cn("shrink-0 object-contain", logoClassName)}
       />
     </NavigationLink>
   );

@@ -5,30 +5,16 @@ import {
   ChevronRight,
   Plus,
   Server,
-  Settings,
   PanelsTopLeft,
 } from "lucide-react";
 import { OpenHandsLogoButton } from "#/components/shared/buttons/openhands-logo-button";
-import { NavigationLink } from "#/components/shared/navigation-link";
-import {
-  automationListPath,
-  getInterfaceCopy,
-  hasAutomationInterface,
-} from "#/manifests/automation-interface";
-import {
-  CUSTOMIZE_PATH,
-  usePinnedHomeRoute,
-} from "#/hooks/use-pinned-home-route";
 import { SidebarCollapsedIconSlot } from "./sidebar-collapsed-icon-slot";
 import { SidebarNavLink } from "./sidebar-nav-link";
 import { I18nKey } from "#/i18n/declaration";
 import { cn } from "#/utils/utils";
-import { StyledTooltip } from "#/components/shared/buttons/styled-tooltip";
 import { BackendSelector } from "#/components/features/backends/backend-selector";
 import { BackendStatusDot } from "#/components/features/backends/backend-status-dot";
-import { CommandMenuTrigger } from "#/components/features/command-menu/command-menu-trigger";
 import { SidebarConversationList } from "./sidebar-conversation-list";
-import AutomationsIcon from "#/icons/automations.svg?react";
 import {
   SIDEBAR_COLLAPSE_TOGGLE_OVERLAY_CLASS,
   SIDEBAR_COLLAPSED_LOGO_WRAPPER_CLASS,
@@ -43,8 +29,8 @@ import { useCanvasExtensionsRuntime } from "#/components/features/canvas-extensi
 import type { Backend } from "#/api/backend-registry/types";
 
 const ICON_SIZE = 18;
-const SIDEBAR_LOGO_WIDTH = 34;
-const SIDEBAR_LOGO_HEIGHT = Math.round((SIDEBAR_LOGO_WIDTH * 30) / 46);
+const SIDEBAR_LOGO_WIDTH = 28;
+const SIDEBAR_LOGO_HEIGHT = 28;
 
 export interface SidebarRailBodyProps {
   collapsed: boolean;
@@ -78,9 +64,9 @@ export function SidebarRailBody({
   onCollapse,
   onExpand,
   showCollapsedExpandButton,
-  isExtensionsActive,
-  currentPath,
-  activeBackend,
+  isExtensionsActive: _isExtensionsActive,
+  currentPath: _currentPath,
+  activeBackend: _activeBackend,
   activeBackendHealth,
   collapsedBackendPopoverOpen,
   setCollapsedBackendPopoverOpen,
@@ -92,24 +78,6 @@ export function SidebarRailBody({
   const { t } = useTranslation("openhands");
   const { pages: canvasExtensionPages } = useCanvasExtensionsRuntime();
   const backendCloseTimerRef = collapsedBackendCloseTimer;
-  const { isPinnedRoute, togglePinnedRoute } = usePinnedHomeRoute();
-
-  const buildPinAction = (path: string, testId: string) => {
-    const pinned = isPinnedRoute(path);
-    return {
-      pinned,
-      onToggle: () => togglePinnedRoute(path),
-      label: pinned
-        ? t(I18nKey.SIDEBAR$UNPIN_AS_HOME)
-        : t(I18nKey.SIDEBAR$PIN_AS_HOME),
-      testId,
-    };
-  };
-
-  const isCloudBackend = activeBackend.kind === "cloud";
-  const cloudSettingsUrl = isCloudBackend
-    ? `${activeBackend.host.replace(/\/+$/, "")}/settings`
-    : null;
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
@@ -188,7 +156,6 @@ export function SidebarRailBody({
       </div>
 
       <nav className={sidebarNavListClassName(collapsed)}>
-        <CommandMenuTrigger collapsed={collapsed} />
         <SidebarNavLink
           to="/conversations"
           end
@@ -197,59 +164,6 @@ export function SidebarRailBody({
           collapsed={collapsed}
           icon={<Plus width={ICON_SIZE} height={ICON_SIZE} />}
         />
-        <SidebarNavLink
-          to={CUSTOMIZE_PATH}
-          label={t(I18nKey.NAV$CUSTOMIZE)}
-          testId="sidebar-skills-link"
-          collapsed={collapsed}
-          forceActive={isExtensionsActive}
-          pinAction={buildPinAction(
-            CUSTOMIZE_PATH,
-            "sidebar-pin-home-toggle-customize",
-          )}
-          icon={
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width={ICON_SIZE}
-              height={ICON_SIZE}
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              aria-hidden="true"
-            >
-              <path d="M2.97 12.92A2 2 0 0 0 2 14.63v3.24a2 2 0 0 0 .97 1.71l3 1.8a2 2 0 0 0 2.06 0L12 19v-5.5l-5-3-4.03 2.42Z" />
-              <path d="m7 16.5-4.74-2.85" />
-              <path d="m7 16.5 5-3" />
-              <path d="M7 16.5v5.17" />
-              <path d="M12 13.5V19l3.97 2.38a2 2 0 0 0 2.06 0l3-1.8a2 2 0 0 0 .97-1.71v-3.24a2 2 0 0 0-.97-1.71L17 10.5l-5 3Z" />
-              <path d="m17 16.5-5-3" />
-              <path d="m17 16.5 4.74-2.85" />
-              <path d="m17 16.5v5.17" />
-              <path d="M7.97 4.42A2 2 0 0 0 7 6.13v4.37l5 3 5-3V6.13a2 2 0 0 0-.97-1.71l-3-1.8a2 2 0 0 0-2.06 0l-3 1.8Z" />
-              <path d="M12 8 7.26 5.15" />
-              <path d="m12 8 4.74-2.85" />
-              <path d="M12 13.5V8" />
-            </svg>
-          }
-        />
-        {/* The interface manifest owns this entry's label, so an absent
-            manifest leaves the rail without it rather than with host copy. */}
-        {hasAutomationInterface() && (
-          <SidebarNavLink
-            to={automationListPath()}
-            label={getInterfaceCopy().sidebarLabel}
-            testId="sidebar-automations-link"
-            collapsed={collapsed}
-            icon={<AutomationsIcon width={ICON_SIZE} height={ICON_SIZE} />}
-            pinAction={buildPinAction(
-              automationListPath(),
-              "sidebar-pin-home-toggle-automations",
-            )}
-          />
-        )}
         {canvasExtensionPages.map((page) => (
           <SidebarNavLink
             key={`${page.extension.name}:${page.contribution.id}`}
@@ -271,44 +185,6 @@ export function SidebarRailBody({
             "mt-auto pb-2 cursor-pointer",
           )}
         >
-          <StyledTooltip
-            content={t(I18nKey.SIDEBAR$SETTINGS)}
-            placement="right"
-          >
-            {isCloudBackend && cloudSettingsUrl ? (
-              <a
-                href={cloudSettingsUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                data-testid="collapsed-settings-link"
-                aria-label={t(I18nKey.SIDEBAR$SETTINGS)}
-                className={sidebarNavRowClassName({ collapsed: true })}
-              >
-                <SidebarCollapsedIconSlot active={false}>
-                  <Settings width={ICON_SIZE} height={ICON_SIZE} />
-                </SidebarCollapsedIconSlot>
-                <span className={sidebarNavLabelClassName(true)}>
-                  {t(I18nKey.SIDEBAR$SETTINGS)}
-                </span>
-              </a>
-            ) : (
-              <NavigationLink
-                to="/settings"
-                data-testid="collapsed-settings-link"
-                aria-label={t(I18nKey.SIDEBAR$SETTINGS)}
-                className={sidebarNavRowClassName({ collapsed: true })}
-              >
-                <SidebarCollapsedIconSlot
-                  active={currentPath.startsWith("/settings")}
-                >
-                  <Settings width={ICON_SIZE} height={ICON_SIZE} />
-                </SidebarCollapsedIconSlot>
-                <span className={sidebarNavLabelClassName(true)}>
-                  {t(I18nKey.SIDEBAR$SETTINGS)}
-                </span>
-              </NavigationLink>
-            )}
-          </StyledTooltip>
           <div
             className="relative"
             ref={collapsedBackendPopoverRef}
