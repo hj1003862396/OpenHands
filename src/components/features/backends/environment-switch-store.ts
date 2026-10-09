@@ -15,8 +15,8 @@
 // trigger would fire and immediately get torn down before React paints the
 // overlay.
 
-export const ENVIRONMENT_SWITCH_DURATION_MS = 980;
-export const ENVIRONMENT_SWITCH_SETACTIVE_DELAY_MS = 400;
+export const ENVIRONMENT_SWITCH_DURATION_MS = 280;
+export const ENVIRONMENT_SWITCH_SETACTIVE_DELAY_MS = 120;
 
 export interface EnvironmentSwitchSnapshot {
   visible: boolean;
