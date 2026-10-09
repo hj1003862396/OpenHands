@@ -8,6 +8,7 @@ import { useCanManageOrgProfiles } from "#/hooks/use-can-manage-org-profiles";
 import { useSwitchLlmProfileAndLog } from "#/hooks/mutation/use-switch-llm-profile-and-log";
 import { SWITCH_LLM_PROFILE_MUTATION_KEY } from "#/hooks/mutation/use-switch-llm-profile";
 import { useModelStore } from "#/stores/model-store";
+import { isProvisionalConversationId } from "#/utils/conversation-local-storage";
 
 export interface ChatInputLlmProfileState {
   profiles: ProfileInfo[];
@@ -86,7 +87,9 @@ export function useChatInputLlmProfileState(): ChatInputLlmProfileState {
   // route has no real conversation id yet, so the per-conversation
   // /switch_profile would 404. Either way the pill still names the active
   // profile; only the selectable rows drop out.
-  const isTaskRoute = conversationId?.startsWith("task-") ?? false;
+  const isTaskRoute = conversationId
+    ? isProvisionalConversationId(conversationId)
+    : false;
   const canSwitchProfile =
     !isTaskRoute && (!!conversationId || canManageOrgProfiles);
 

@@ -29,6 +29,7 @@ import { WebSocketProviderWrapper } from "#/contexts/websocket-provider-wrapper"
 import { useErrorMessageStore } from "#/stores/error-message-store";
 import { I18nKey } from "#/i18n/declaration";
 import { resumeCloudSandbox } from "#/api/cloud/conversation-service.api";
+import { isProvisionalConversationId } from "#/utils/conversation-local-storage";
 
 function AppContent() {
   const { t } = useTranslation("openhands");
@@ -136,7 +137,7 @@ function AppContent() {
   React.useEffect(() => {
     if (backendChanged) return;
     if (!conversationId) return;
-    if (conversationId.startsWith("task-")) return;
+    if (isProvisionalConversationId(conversationId)) return;
     setLastConversationId(active.backend.id, active.orgId, conversationId);
   }, [conversationId, backendChanged, active.backend.id, active.orgId]);
 

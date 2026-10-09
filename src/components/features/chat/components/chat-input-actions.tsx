@@ -24,6 +24,7 @@ import { useChatInputModelState } from "#/hooks/use-chat-input-model-state";
 import { useConversationStore } from "#/stores/conversation-store";
 import { useAgentState } from "#/hooks/use-agent-state";
 import { AgentState } from "#/types/agent-state";
+import { isProvisionalConversationId } from "#/utils/conversation-local-storage";
 import { useUnifiedWebSocketStatus } from "#/hooks/use-unified-websocket-status";
 import { useHandlePlanClick } from "#/hooks/use-handle-plan-click";
 import { I18nKey } from "#/i18n/declaration";
@@ -74,7 +75,7 @@ export function ChatInputActions({
   const agentProfilesForStart = useAgentProfiles({ enabled: isPreStart });
   const showAgentProfileSwitch =
     isPreStart &&
-    !(conversationId?.startsWith("task-") ?? false) &&
+    !(conversationId ? isProvisionalConversationId(conversationId) : false) &&
     (agentProfilesForStart.data?.profiles?.length ?? 0) > 0;
   // Code/Plan mode switching is a cloud OpenHands feature — it doesn't apply
   // to ACP conversations (which have no "plan" mode), so hide it when ACP.

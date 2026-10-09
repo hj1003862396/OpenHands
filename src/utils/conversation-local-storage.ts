@@ -213,16 +213,27 @@ export function isTaskConversationId(conversationId: string): boolean {
 }
 
 /**
+ * Client-side placeholder while createConversation is still in flight
+ * (`pending-{uuid}`), or a cloud start-task id (`task-{uuid}`).
+ */
+export function isProvisionalConversationId(conversationId: string): boolean {
+  return (
+    isTaskConversationId(conversationId) ||
+    conversationId.startsWith("pending-")
+  );
+}
+
+/**
  * Whether persistence should be skipped for this conversation id.
  *
  * Skips:
  *  - empty string ids (callers outside of a conversation route, e.g.
  *    rendered inside a unit test without a NavigationProvider)
- *  - "task-..." ids used as placeholders during V1 conversation
- *    initialization
+ *  - provisional ids (`task-…` / `pending-…`) used before a real
+ *    conversation id exists
  */
 function shouldSkipPersistence(conversationId: string): boolean {
-  return conversationId === "" || isTaskConversationId(conversationId);
+  return conversationId === "" || isProvisionalConversationId(conversationId);
 }
 
 /**

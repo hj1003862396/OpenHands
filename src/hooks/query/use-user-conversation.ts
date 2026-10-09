@@ -5,6 +5,7 @@ import { AxiosError } from "axios";
 import AgentServerConversationService from "#/api/conversation-service/agent-server-conversation-service.api";
 import { AppConversation } from "#/api/conversation-service/agent-server-conversation-service.types";
 import { useActiveBackend } from "#/contexts/active-backend-context";
+import { isProvisionalConversationId } from "#/utils/conversation-local-storage";
 
 const FIVE_MINUTES = 1000 * 60 * 5;
 const FIFTEEN_MINUTES = 1000 * 60 * 15;
@@ -57,7 +58,7 @@ export const useUserConversation = (
         await AgentServerConversationService.batchGetAppConversations([cid]);
       return results[0] ?? null;
     },
-    enabled: !!cid && !cid.startsWith("task-") && !backendChanged,
+    enabled: !!cid && !isProvisionalConversationId(cid) && !backendChanged,
     retry: false,
     refetchInterval,
     staleTime: FIVE_MINUTES,

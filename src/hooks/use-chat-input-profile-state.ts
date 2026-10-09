@@ -14,6 +14,7 @@ import {
   useActivateAgentProfile,
   ACTIVATE_AGENT_PROFILE_MUTATION_KEY,
 } from "#/hooks/mutation/use-activate-agent-profile";
+import { isProvisionalConversationId } from "#/utils/conversation-local-storage";
 
 export interface ChatInputProfileState {
   profiles: AgentProfileSummary[];
@@ -39,7 +40,9 @@ export function useChatInputProfileState(): ChatInputProfileState {
   const creatingConversations = useIsMutating({
     mutationKey: CREATE_CONVERSATION_MUTATION_KEY,
   });
-  const isTaskRoute = conversationId?.startsWith("task-") ?? false;
+  const isTaskRoute = conversationId
+    ? isProvisionalConversationId(conversationId)
+    : false;
   const isSwitching =
     isTaskRoute || activatingProfiles > 0 || creatingConversations > 0;
 

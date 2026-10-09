@@ -13,7 +13,8 @@ import {
  * Check if a conversation ID is a temporary task ID.
  * Task IDs have the format "task-{uuid}" and are used during V1 conversation initialization.
  */
-const isTaskId = (id: string): boolean => id.startsWith("task-");
+const isTaskId = (id: string): boolean =>
+  id.startsWith("task-") || id.startsWith("pending-");
 
 const DRAFT_SAVE_DEBOUNCE_MS = 500;
 

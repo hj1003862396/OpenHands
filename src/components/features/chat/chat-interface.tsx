@@ -51,6 +51,7 @@ import {
   isStreamingDeltaEvent,
   isUserMessageEvent,
 } from "#/types/agent-server/type-guards";
+import { isProvisionalConversationId } from "#/utils/conversation-local-storage";
 import { useConversationWebSocket } from "#/contexts/conversation-websocket-context";
 import ChatStatusIndicator from "./chat-status-indicator";
 import { getStatusColor, getStatusText } from "#/utils/utils";
@@ -341,10 +342,14 @@ export function ChatInterface() {
     }
   }, [hasAgentVisibleOutputSinceLastUser]);
 
+  const isProvisionalConversation =
+    !!conversationId && isProvisionalConversationId(conversationId);
+
   const showProcessingStatus =
     !hasAgentVisibleOutputSinceLastUser &&
     (awaitingAgentReply ||
       hasPendingUserMessages ||
+      isProvisionalConversation ||
       curAgentState === AgentState.RUNNING ||
       isPlanningAgentRunning);
 

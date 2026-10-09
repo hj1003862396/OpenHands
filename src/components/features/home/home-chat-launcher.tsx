@@ -8,6 +8,7 @@ import { useChatAttachmentUpload } from "#/hooks/chat/use-chat-attachment-upload
 import { useConversationStore } from "#/stores/conversation-store";
 import { setPendingTaskAttachments } from "#/stores/pending-task-attachments-store";
 import { enqueueHomeTaskPendingMessage } from "#/utils/enqueue-home-task-pending-message";
+import { useOptimisticUserMessageStore } from "#/stores/optimistic-user-message-store";
 import { sendMessageWithAttachments } from "#/utils/send-message-with-attachments";
 import { useNavigation } from "#/context/navigation-context";
 import { useIsCreatingConversation } from "#/hooks/use-is-creating-conversation";
@@ -56,18 +57,36 @@ export function HomeChatLauncher() {
       entryPoint: "home_chat_launcher",
     };
 
-    // Skip the "Creating conversation…" toast — jumping straight into the
-    // chat feels less fragmented than a mid-flight loading banner.
+    // Optimistic shell: jump into a provisional conversation route immediately
+    // so the click feels instant. createConversation still runs in the
+    // background; we reassign the pending bubble and replace the URL once the
+    // real id lands.
+    const optimisticId = `pending-${crypto.randomUUID()}`;
+    try {
+      sessionStorage.removeItem(HOME_PROMPT_DRAFT_KEY);
+    } catch {
+      // sessionStorage not available
+    }
+
     void (async () => {
       try {
-        const data = await createConversation(variables);
-        try {
-          sessionStorage.removeItem(HOME_PROMPT_DRAFT_KEY);
-        } catch {
-          // sessionStorage not available
+        if (trimmed || attachmentSnapshot.images.length > 0) {
+          await enqueueHomeTaskPendingMessage({
+            conversationId: optimisticId,
+            text: trimmed,
+            images: attachmentSnapshot.images,
+            imagesMarkedUploadAsFile,
+          });
         }
+        navigate(`/conversations/${optimisticId}`);
+
+        const data = await createConversation(variables);
         const targetConversationId = data.conversation_id;
         const isTaskConversation = targetConversationId.startsWith("task-");
+
+        useOptimisticUserMessageStore
+          .getState()
+          .reassignPendingMessages(optimisticId, targetConversationId);
 
         if (hasAttachments) {
           // Cloud sandboxes provision asynchronously; uploads and the first
@@ -83,6 +102,7 @@ export function HomeChatLauncher() {
 
             if (!taskId) {
               displayErrorToast(null);
+              navigate("/");
               return;
             }
 
@@ -93,44 +113,36 @@ export function HomeChatLauncher() {
               imagesMarkedUploadAsFile: [...imagesMarkedUploadAsFile],
             });
             clearAllFiles();
-            await enqueueHomeTaskPendingMessage({
-              conversationId: targetConversationId,
-              text: trimmed,
-              images: attachmentSnapshot.images,
-              imagesMarkedUploadAsFile,
+            navigate(`/conversations/${targetConversationId}`, {
+              replace: true,
             });
-            navigate(`/conversations/${targetConversationId}`);
             return;
-          } else {
-            try {
-              await sendMessageWithAttachments({
-                conversationId: targetConversationId,
-                content: trimmed,
-                images: attachmentSnapshot.images,
-                files: attachmentSnapshot.files,
-                imagesMarkedUploadAsFile,
-                t,
-              });
-              clearAllFiles();
-            } catch (error) {
-              displayErrorToast(error instanceof Error ? error.message : null);
-              return;
-            }
+          }
+
+          try {
+            await sendMessageWithAttachments({
+              conversationId: targetConversationId,
+              content: trimmed,
+              images: attachmentSnapshot.images,
+              files: attachmentSnapshot.files,
+              imagesMarkedUploadAsFile,
+              t,
+            });
+            clearAllFiles();
+          } catch (error) {
+            displayErrorToast(error instanceof Error ? error.message : null);
+            navigate(`/conversations/${targetConversationId}`, {
+              replace: true,
+            });
+            return;
           }
         }
 
-        if (isTaskConversation && trimmed) {
-          await enqueueHomeTaskPendingMessage({
-            conversationId: targetConversationId,
-            text: trimmed,
-            images: [],
-            imagesMarkedUploadAsFile: [],
-          });
-        }
-
-        navigate(`/conversations/${targetConversationId}`);
+        navigate(`/conversations/${targetConversationId}`, { replace: true });
       } catch (error) {
+        useOptimisticUserMessageStore.getState().clearPendingMessages();
         displayErrorToast(error instanceof Error ? error.message : null);
+        navigate("/");
       }
     })();
   };

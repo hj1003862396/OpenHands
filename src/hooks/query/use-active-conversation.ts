@@ -3,6 +3,7 @@ import { useOptionalConversationId } from "#/hooks/use-conversation-id";
 import { useUserConversation } from "./use-user-conversation";
 import ConversationService from "#/api/conversation-service/conversation-service.api";
 import { isExecutionActive } from "#/utils/status";
+import { isProvisionalConversationId } from "#/utils/conversation-local-storage";
 
 export const useActiveConversation = () => {
   // Optional: the chat input renders on the home page too (no conversation
@@ -10,9 +11,10 @@ export const useActiveConversation = () => {
   const { conversationId } = useOptionalConversationId();
 
   // Task polling is handled by useTaskPolling hook
-  const isTaskId = !!conversationId && conversationId.startsWith("task-");
+  const isProvisional =
+    !!conversationId && isProvisionalConversationId(conversationId);
   const actualConversationId =
-    !conversationId || isTaskId ? null : conversationId;
+    !conversationId || isProvisional ? null : conversationId;
 
   const userConversation = useUserConversation(
     actualConversationId,
