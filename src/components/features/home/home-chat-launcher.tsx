@@ -1,4 +1,3 @@
-import toast from "react-hot-toast";
 import { useTranslation } from "react-i18next";
 import { CustomChatInput } from "#/components/features/chat/custom-chat-input";
 import { useActiveBackend } from "#/contexts/active-backend-context";
@@ -12,11 +11,7 @@ import { enqueueHomeTaskPendingMessage } from "#/utils/enqueue-home-task-pending
 import { sendMessageWithAttachments } from "#/utils/send-message-with-attachments";
 import { useNavigation } from "#/context/navigation-context";
 import { useIsCreatingConversation } from "#/hooks/use-is-creating-conversation";
-import { I18nKey } from "#/i18n/declaration";
-import {
-  displayErrorToast,
-  TOAST_OPTIONS,
-} from "#/utils/custom-toast-handlers";
+import { displayErrorToast } from "#/utils/custom-toast-handlers";
 import { HomeHeaderTitle } from "./home-header/home-header-title";
 import { SkillShareCodeControls } from "./skill-share-code-controls";
 
@@ -61,17 +56,11 @@ export function HomeChatLauncher() {
       entryPoint: "home_chat_launcher",
     };
 
-    // Loading toast gives the user a clear signal that the request is in
-    // flight; dismissed precisely once the mutation resolves.
-    const toastId = toast.loading(
-      t(I18nKey.HOME$CREATING_CONVERSATION),
-      TOAST_OPTIONS,
-    );
-
+    // Skip the "Creating conversation…" toast — jumping straight into the
+    // chat feels less fragmented than a mid-flight loading banner.
     void (async () => {
       try {
         const data = await createConversation(variables);
-        toast.dismiss(toastId);
         try {
           sessionStorage.removeItem(HOME_PROMPT_DRAFT_KEY);
         } catch {
@@ -141,7 +130,6 @@ export function HomeChatLauncher() {
 
         navigate(`/conversations/${targetConversationId}`);
       } catch (error) {
-        toast.dismiss(toastId);
         displayErrorToast(error instanceof Error ? error.message : null);
       }
     })();
