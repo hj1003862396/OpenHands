@@ -106,7 +106,7 @@ code {
 }
 
 :host[data-environment-switching="true"] [data-testid="root-layout"] {
-  animation: environment-switch-content-refresh 980ms ease-in-out forwards;
+  animation: environment-switch-content-refresh 280ms ease-out forwards;
 }
 
 @keyframes environment-switch-overlay-fade {
@@ -129,50 +129,46 @@ code {
 }
 
 .environment-switch-overlay > div {
-  animation: environment-switch-overlay-fade 980ms ease-in-out forwards;
+  animation: environment-switch-overlay-fade 280ms ease-out forwards;
 }
 
-/* Apple-style pilot: glass rail over the cool-grey shell. */
+/* Solid workbench shell: opaque surfaces, faint gold wash only. */
 .oh-shell-wash {
-  background-color: var(--cool-grey-950);
-  background-image:
-    radial-gradient(
-      720px 480px at 8% 0%,
-      color-mix(in srgb, #c9b974 28%, transparent),
-      transparent 62%
-    ),
-    linear-gradient(
-      90deg,
-      color-mix(in srgb, var(--cool-grey-700) 70%, var(--cool-grey-950)) 0,
-      var(--cool-grey-950) 360px
-    );
+  background-color: var(--oh-background, var(--cool-grey-950));
+  background-image: radial-gradient(
+    720px 420px at 12% 0%,
+    color-mix(in srgb, #c9b974 12%, transparent),
+    transparent 68%
+  );
 }
 
 .oh-glass-surface {
-  background-color: color-mix(in srgb, var(--cool-grey-950) 64%, transparent);
-  -webkit-backdrop-filter: blur(20px) saturate(180%);
-  backdrop-filter: blur(20px) saturate(180%);
+  background-color: var(--oh-surface);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  box-shadow: 0 1px 0 color-mix(in srgb, white 6%, transparent);
 }
 
 .oh-home-input-float {
-  background-color: color-mix(in srgb, var(--cool-grey-900) 78%, transparent);
-  -webkit-backdrop-filter: blur(20px) saturate(180%);
-  backdrop-filter: blur(20px) saturate(180%);
+  background-color: var(--oh-surface-raised);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
   box-shadow:
-    0 18px 40px color-mix(in srgb, black 35%, transparent),
-    inset 0 1px 0 color-mix(in srgb, white 12%, transparent);
+    0 1px 2px color-mix(in srgb, black 16%, transparent),
+    0 8px 20px color-mix(in srgb, black 14%, transparent);
 }
 
 @media (prefers-reduced-transparency: reduce) {
-  .oh-glass-surface,
-  .oh-home-input-float {
-    background-color: var(--cool-grey-950);
+  .oh-glass-surface {
+    background-color: var(--oh-surface);
     -webkit-backdrop-filter: none;
     backdrop-filter: none;
   }
 
   .oh-home-input-float {
-    background-color: var(--cool-grey-900);
+    background-color: var(--oh-surface-raised);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
   }
 }
 

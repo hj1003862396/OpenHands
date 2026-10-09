@@ -20,11 +20,7 @@ import {
 } from "#/utils/skill-share-codes";
 import { markSkillSharePendingConversation } from "#/utils/skill-creator-events";
 import { cn } from "#/utils/utils";
-import {
-  formControlBorderClassName,
-  formControlSurfaceClassName,
-  formControlTransitionClassName,
-} from "#/utils/form-control-classes";
+import { formControlTransitionClassName } from "#/utils/form-control-classes";
 
 const SKILL_CREATOR_LAUNCH_QUERY =
   "/skill-creator\n\n请全程用简体中文与我交流，并创建技能。";
@@ -35,9 +31,8 @@ function skillRedeemLaunchQuery(skillName: string): string {
 }
 
 const pillButtonClassName = cn(
-  "flex flex-row items-center gap-2 rounded-full px-2.5 py-1 text-white",
-  formControlBorderClassName,
-  formControlSurfaceClassName,
+  "inline-flex flex-row items-center gap-1 rounded-full border border-transparent bg-transparent px-2 py-0.5",
+  "text-xs font-normal leading-4 text-white/50",
   formControlTransitionClassName,
 );
 
@@ -173,13 +168,13 @@ export function SkillShareCodeControls({
             pillButtonClassName,
             isCreating
               ? "cursor-not-allowed opacity-50"
-              : "cursor-pointer hover:bg-surface-raised",
+              : "cursor-pointer hover:bg-white/5 hover:text-white/75",
           )}
         >
-          <span className="flex h-4 w-4 shrink-0 items-center justify-center">
-            <Sparkles aria-hidden className="h-4 w-4" strokeWidth={2} />
+          <span className="flex h-3.5 w-3.5 shrink-0 items-center justify-center">
+            <Sparkles aria-hidden className="h-3.5 w-3.5" strokeWidth={2} />
           </span>
-          <span className="text-sm font-normal leading-5">创建技能码</span>
+          <span>创建技能码</span>
         </button>
 
         <div className="flex flex-row items-center gap-1.5">
@@ -202,10 +197,8 @@ export function SkillShareCodeControls({
             disabled={isCreating}
             data-testid="use-skill-code-input"
             className={cn(
-              "h-8 w-[7.5rem] rounded-full px-3 text-sm text-white placeholder:text-white/40",
-              formControlBorderClassName,
-              formControlSurfaceClassName,
-              "outline-none focus:border-white/40",
+              "h-7 w-[6.5rem] rounded-full border border-white/10 bg-transparent px-2.5 text-xs text-white/70 placeholder:text-white/30",
+              "outline-none focus:border-white/25",
               isCreating && "cursor-not-allowed opacity-50",
             )}
             aria-label="使用技能码"
@@ -219,10 +212,10 @@ export function SkillShareCodeControls({
               pillButtonClassName,
               isCreating || codeInput.trim().length !== 6
                 ? "cursor-not-allowed opacity-50"
-                : "cursor-pointer hover:bg-surface-raised",
+                : "cursor-pointer hover:bg-white/5 hover:text-white/75",
             )}
           >
-            <span className="text-sm font-normal leading-5">使用技能码</span>
+            <span>使用技能码</span>
           </button>
         </div>
       </div>
@@ -235,9 +228,7 @@ export function SkillShareCodeControls({
             onChange={(e) => setMintSkillName(e.target.value)}
             disabled={isCreating}
             className={cn(
-              "h-8 max-w-[14rem] rounded-full px-2.5 text-sm text-white",
-              formControlBorderClassName,
-              formControlSurfaceClassName,
+              "h-7 max-w-[14rem] rounded-full border border-white/10 bg-transparent px-2 text-xs text-white/60",
               isCreating && "cursor-not-allowed opacity-50",
             )}
             aria-label="为已有技能生成码"
@@ -261,10 +252,10 @@ export function SkillShareCodeControls({
               pillButtonClassName,
               isCreating || !mintSkillName
                 ? "cursor-not-allowed opacity-50"
-                : "cursor-pointer hover:bg-surface-raised",
+                : "cursor-pointer hover:bg-white/5 hover:text-white/75",
             )}
           >
-            <span className="text-sm font-normal leading-5">生成技能码</span>
+            <span>生成技能码</span>
           </button>
         </div>
       ) : null}
