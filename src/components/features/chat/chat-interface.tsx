@@ -43,6 +43,11 @@ import { useConversationStore } from "#/stores/conversation-store";
 import ConfirmationModeEnabled from "./confirmation-mode-enabled";
 import { useTaskPolling } from "#/hooks/query/use-task-polling";
 import { matchesPendingConversationId } from "#/utils/pending-task-message-link";
+import {
+  isMessageEvent,
+  isStreamingDeltaEvent,
+  isUserMessageEvent,
+} from "#/types/agent-server/type-guards";
 import { useConversationWebSocket } from "#/contexts/conversation-websocket-context";
 import ChatStatusIndicator from "./chat-status-indicator";
 import { getStatusColor, getStatusText } from "#/utils/utils";
@@ -288,6 +293,48 @@ export function ChatInterface() {
       setAwaitingAgentReply(false);
     }
   }, [awaitingAgentReply, curAgentState, isPlanningAgentRunning]);
+
+  const hasAssistantTextSinceLastUser = React.useMemo(() => {
+    for (let index = allConversationEvents.length - 1; index >= 0; index -= 1) {
+      const event = allConversationEvents[index];
+      if (isUserMessageEvent(event)) {
+        return false;
+      }
+      if (isStreamingDeltaEvent(event)) {
+        const streamed =
+          `${event.content ?? ""}${event.reasoning_content ?? ""}`.trim();
+        if (streamed.length > 0) {
+          return true;
+        }
+        continue;
+      }
+      if (isMessageEvent(event) && event.llm_message.role === "assistant") {
+        const content = event.llm_message.content;
+        if (Array.isArray(content)) {
+          const text = content
+            .filter((part) => part.type === "text")
+            .map((part) => ("text" in part ? String(part.text ?? "") : ""))
+            .join("")
+            .trim();
+          if (text.length > 0) return true;
+        }
+      }
+    }
+    return false;
+  }, [allConversationEvents]);
+
+  React.useEffect(() => {
+    if (hasAssistantTextSinceLastUser) {
+      setAwaitingAgentReply(false);
+    }
+  }, [hasAssistantTextSinceLastUser]);
+
+  const showProcessingStatus =
+    !hasAssistantTextSinceLastUser &&
+    (awaitingAgentReply ||
+      hasPendingUserMessages ||
+      curAgentState === AgentState.RUNNING ||
+      isPlanningAgentRunning);
 
   const hasModelEntries = useModelStore((s) =>
     conversationId
@@ -604,10 +651,7 @@ export function ChatInterface() {
           */}
             <PendingUserMessages />
 
-            {(awaitingAgentReply ||
-              hasPendingUserMessages ||
-              curAgentState === AgentState.RUNNING ||
-              isPlanningAgentRunning) && (
+            {showProcessingStatus && (
               <div
                 data-testid="chat-processing-status"
                 className="self-start px-1 py-1 text-sm text-[var(--oh-muted)]"
