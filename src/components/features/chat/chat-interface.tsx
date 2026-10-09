@@ -35,6 +35,7 @@ import { useOptimisticUserMessageStore } from "#/stores/optimistic-user-message-
 import { SERVER_CONNECTION_ERROR_MESSAGE } from "#/constants/server-connection-error";
 import { ErrorMessageBanner } from "./error-message-banner";
 import { SkillInstallRestartBanner } from "./skill-install-restart-banner";
+import { SkillShareCodeBanner } from "./skill-share-code-banner";
 import { Messages } from "#/components/conversation-events/chat/messages";
 import { PendingUserMessages } from "./pending-user-messages";
 import { useUnifiedUploadFiles } from "#/hooks/mutation/use-unified-upload-files";
@@ -588,6 +589,7 @@ export function ChatInterface() {
 
           <div className="flex shrink-0 flex-col gap-[6px] pb-4">
             <SkillInstallRestartBanner conversationId={conversationId} />
+            <SkillShareCodeBanner conversationId={conversationId} />
             <BtwMessages conversationId={conversationId} />
             {errorMessage && (
               <ErrorMessageBanner

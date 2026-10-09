@@ -209,43 +209,9 @@ vi.mock("#/components/features/home/home-git-control-bar-preview", () => ({
   ),
 }));
 
-// Stub the picker modal: pressing it selects one plugin then closes, mirroring
-// the real modal's `onChange` + `onClose` contract. The picker catalog itself
-// is covered by plugin-picker.test.tsx.
-vi.mock(
-  "#/components/features/automations/recommended-automations-launcher",
-  () => ({
-    RecommendedAutomationsLauncher: ({
-      variant,
-      className,
-    }: {
-      variant?: string;
-      className?: string;
-    }) =>
-      variant === "rail" ? (
-        <div data-testid="recommended-automations-rail" className={className} />
-      ) : null,
-  }),
-);
-
-vi.mock("#/components/features/plugins/plugin-picker-modal", () => ({
-  PluginPickerModal: ({
-    onChange,
-    onClose,
-  }: {
-    onChange: (next: { source: string; ref: null; repo_path: null }[]) => void;
-    onClose: () => void;
-  }) => (
-    <button
-      type="button"
-      data-testid="stub-plugin-pick"
-      onClick={() => {
-        onChange([{ source: "github:o/a", ref: null, repo_path: null }]);
-        onClose();
-      }}
-    >
-      pick
-    </button>
+vi.mock("#/components/features/home/skill-share-code-controls", () => ({
+  SkillShareCodeControls: ({ disabled }: { disabled?: boolean }) => (
+    <div data-testid="skill-share-code-controls" data-disabled={disabled ? "true" : "false"} />
   ),
 }));
 
@@ -623,31 +589,10 @@ describe("HomeChatLauncher", () => {
     );
   });
 
-  it("attaches the picked plugins to the created conversation", async () => {
-    const createSpy = vi
-      .spyOn(AgentServerConversationService, "createConversation")
-      .mockResolvedValue(makeConversationResponse());
-
-    renderLauncher();
-    const user = userEvent.setup();
-
-    await user.click(screen.getByTestId("open-plugin-picker"));
-    await user.click(await screen.findByTestId("stub-plugin-pick"));
-    await user.click(screen.getByTestId("stub-chat-submit"));
-
-    await waitFor(() => expect(createSpy).toHaveBeenCalledTimes(1));
-    expect(createSpy).toHaveBeenCalledWith({
-      initialUserMsg: "hello world",
-      plugins: [{ source: "github:o/a", ref: null, repo_path: null }],
-      metadata: null,
-    });
-  });
-
-  it("always renders the recommended automations rail above pinned activity", () => {
+  it("renders skill share code controls and hides the plugin picker", () => {
     renderLauncher();
 
-    expect(
-      screen.getByTestId("recommended-automations-rail"),
-    ).toBeInTheDocument();
+    expect(screen.getByTestId("skill-share-code-controls")).toBeInTheDocument();
+    expect(screen.queryByTestId("open-plugin-picker")).not.toBeInTheDocument();
   });
 });

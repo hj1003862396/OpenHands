@@ -28,10 +28,8 @@ import {
   readStoredLocalWorkspaceMode,
   writeStoredLocalWorkspaceMode,
 } from "#/utils/workspace-mode";
-import type { PluginSpec } from "#/api/conversation-service/agent-server-conversation-service.types";
-import { PluginPickerModal } from "#/components/features/plugins/plugin-picker-modal";
-import { PluginPickerTrigger } from "#/components/features/plugins/plugin-picker-trigger";
 import { HomeHeaderTitle } from "./home-header/home-header-title";
+import { SkillShareCodeControls } from "./skill-share-code-controls";
 import { OpenLauncherButton } from "./open-launcher-button";
 import { OpenWorkspaceDialog } from "./open-workspace-dialog";
 import { OpenRepositoryDialog } from "./open-repository-dialog";
@@ -53,9 +51,6 @@ export function HomeChatLauncher() {
   const [workspaceMode, setWorkspaceModeState] = useState<WorkspaceMode>(() =>
     readStoredLocalWorkspaceMode(),
   );
-  const [selectedPlugins, setSelectedPlugins] = useState<PluginSpec[]>([]);
-  const [isPluginPickerOpen, setIsPluginPickerOpen] = useState(false);
-
   const { mutateAsync: createConversation, isPending } =
     useCreateConversation();
   const isCreatingElsewhere = useIsCreatingConversation();
@@ -119,13 +114,6 @@ export function HomeChatLauncher() {
           branch: pendingBranch.name,
         },
       };
-    }
-
-    // Explicitly-attached plugins are additive on top of any ambient set and
-    // are resolved from git at run time. Omitted entirely when none selected so
-    // nothing attaches unless the user picked it.
-    if (selectedPlugins.length > 0) {
-      variables = { ...variables, plugins: selectedPlugins };
     }
 
     // Loading toast gives the user a clear signal that the request is in
@@ -238,31 +226,29 @@ export function HomeChatLauncher() {
           />
         </div>
 
-        <div className="flex items-center justify-start gap-2">
-          {hasSelection ? (
-            <HomeGitControlBarPreview
-              workspace={pendingWorkspace}
-              repository={pendingRepository}
-              branch={pendingBranch}
-              provider={pendingProvider}
-              workspaceMode={workspaceMode}
-              backendKind={backend.kind}
-              onRepoClick={() => setIsDialogOpen(true)}
-              onWorkspaceModeChange={setWorkspaceMode}
-            />
-          ) : (
-            <OpenLauncherButton
-              kind={isLocal ? "local" : "cloud"}
-              onClick={() => setIsDialogOpen(true)}
-              disabled={isCreating || Boolean(workspacesUnsupportedMessage)}
-              disabledTooltip={workspacesUnsupportedMessage}
-            />
-          )}
-          <PluginPickerTrigger
-            count={selectedPlugins.length}
-            onClick={() => setIsPluginPickerOpen(true)}
-            disabled={isCreating}
-          />
+        <div className="flex flex-col items-start gap-2">
+          <div className="flex items-center justify-start gap-2">
+            {hasSelection ? (
+              <HomeGitControlBarPreview
+                workspace={pendingWorkspace}
+                repository={pendingRepository}
+                branch={pendingBranch}
+                provider={pendingProvider}
+                workspaceMode={workspaceMode}
+                backendKind={backend.kind}
+                onRepoClick={() => setIsDialogOpen(true)}
+                onWorkspaceModeChange={setWorkspaceMode}
+              />
+            ) : (
+              <OpenLauncherButton
+                kind={isLocal ? "local" : "cloud"}
+                onClick={() => setIsDialogOpen(true)}
+                disabled={isCreating || Boolean(workspacesUnsupportedMessage)}
+                disabledTooltip={workspacesUnsupportedMessage}
+              />
+            )}
+          </div>
+          <SkillShareCodeControls disabled={isCreating || llmBlocked} />
         </div>
       </div>
 
@@ -288,14 +274,6 @@ export function HomeChatLauncher() {
             setPendingWorkspace(null);
             setWorkspaceModeState("local_repo");
           }}
-        />
-      )}
-
-      {isPluginPickerOpen && (
-        <PluginPickerModal
-          selected={selectedPlugins}
-          onChange={setSelectedPlugins}
-          onClose={() => setIsPluginPickerOpen(false)}
         />
       )}
     </div>
