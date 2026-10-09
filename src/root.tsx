@@ -222,8 +222,8 @@ export const links: LinksFunction = () => [
 ];
 
 export const meta: MetaFunction = () => [
-  { title: "OpenHands" },
-  { name: "description", content: "Let's Start Building!" },
+  { title: "skillsdog" },
+  { name: "description", content: "skillsdog — 用技能构建" },
 ];
 
 export default function App() {

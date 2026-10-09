@@ -287,7 +287,7 @@ export function buildRuntimeServicesSystemSuffix(
   if (automation?.url_from_agent) {
     lines.push(
       `* Automation backend: ${automation.url_from_agent}`,
-      `    ${automation.description ?? "OpenHands Automations service."}`,
+      `    ${automation.description ?? "skillsdog Automations service."}`,
     );
     if (automation.docs_url) {
       lines.push(`    Docs:    ${automation.docs_url}`);

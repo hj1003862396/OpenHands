@@ -286,7 +286,7 @@ function getDirSizeBytes(dir) {
 /** @type {import('electron-builder').Configuration} */
 const config = {
   appId: "dev.openhands.agent-canvas",
-  productName: "OpenHands Agent Canvas",
+  productName: "skillsdog",
   copyright: "Copyright © 2025 All Hands AI",
 
   // Stamp the packaged app with the released version (see rootPackageJson
@@ -391,7 +391,7 @@ const config = {
   },
 
   dmg: {
-    title: "OpenHands Agent Canvas",
+    title: "skillsdog",
     contents: [
       { x: 130, y: 220 },
       { x: 410, y: 220, type: "link", path: "/Applications" },
