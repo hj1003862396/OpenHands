@@ -17052,7 +17052,7 @@
   },
   "ACTION_MESSAGE$THINK": {
     "en": "Thinking",
-    "zh-CN": "思考",
+    "zh-CN": "正在处理中",
     "zh-TW": "思考",
     "ko-KR": "생각",
     "ja": "考える",

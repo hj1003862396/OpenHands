@@ -269,6 +269,27 @@ export function ChatInterface() {
     [pendingMessages, conversationId],
   );
 
+  // Show a live-activity chip from send until the agent reports RUNNING
+  // (or settles). Without this there is a blank gap after the optimistic
+  // user bubble while waiting for the first execution_status update.
+  const [awaitingAgentReply, setAwaitingAgentReply] = React.useState(false);
+
+  React.useEffect(() => {
+    if (!awaitingAgentReply) return;
+    if (
+      curAgentState === AgentState.RUNNING ||
+      isPlanningAgentRunning ||
+      curAgentState === AgentState.AWAITING_USER_INPUT ||
+      curAgentState === AgentState.AWAITING_USER_CONFIRMATION ||
+      curAgentState === AgentState.FINISHED ||
+      curAgentState === AgentState.STOPPED ||
+      curAgentState === AgentState.ERROR ||
+      curAgentState === AgentState.RATE_LIMITED
+    ) {
+      setAwaitingAgentReply(false);
+    }
+  }, [awaitingAgentReply, curAgentState, isPlanningAgentRunning]);
+
   const hasModelEntries = useModelStore((s) =>
     conversationId
       ? (s.entriesByConversation[conversationId]?.length ?? 0) > 0
@@ -382,6 +403,7 @@ export function ChatInterface() {
       fileUrls: uploadedFiles,
       timestamp,
     });
+    setAwaitingAgentReply(true);
     // Submitting a new prompt should always pull the chat back to the
     // latest message even if the user had scrolled up. This also re-arms
     // autoScroll so the streamed agent reply auto-follows.
@@ -398,6 +420,7 @@ export function ChatInterface() {
           ? sendError.message
           : t(I18nKey.CHAT_INTERFACE$FAILED_TO_SEND_MESSAGE);
       markPendingMessageError(pendingId, sendErrorMessage);
+      setAwaitingAgentReply(false);
     }
   };
 
@@ -648,7 +671,9 @@ export function ChatInterface() {
                       </div>
                     ) : (
                       (curAgentState === AgentState.RUNNING ||
-                        isPlanningAgentRunning) && (
+                        isPlanningAgentRunning ||
+                        hasPendingUserMessages ||
+                        awaitingAgentReply) && (
                         <div className="pointer-events-none absolute inset-x-9 bottom-0 flex justify-center">
                           <TypingIndicator events={allConversationEvents} />
                         </div>
