@@ -9842,6 +9842,23 @@
     "uk": "Агент виконує завдання",
     "ca": "L'agent està executant la tasca"
   },
+  "CHAT_INTERFACE$PROCESSING": {
+    "en": "Processing",
+    "de": "Wird verarbeitet",
+    "zh-CN": "正在处理",
+    "zh-TW": "正在處理",
+    "ko-KR": "처리 중",
+    "no": "Behandler",
+    "it": "Elaborazione",
+    "pt": "Processando",
+    "es": "Procesando",
+    "ar": "جارٍ المعالجة",
+    "fr": "Traitement",
+    "tr": "İşleniyor",
+    "ja": "処理中",
+    "uk": "Обробка",
+    "ca": "Processant"
+  },
   "CHAT_INTERFACE$AGENT_AWAITING_USER_INPUT_MESSAGE": {
     "en": "Agent is awaiting user input...",
     "de": "Agent wartet auf Benutzereingabe...",
@@ -17052,7 +17069,7 @@
   },
   "ACTION_MESSAGE$THINK": {
     "en": "Thinking",
-    "zh-CN": "正在处理中",
+    "zh-CN": "思考",
     "zh-TW": "思考",
     "ko-KR": "생각",
     "ja": "考える",
