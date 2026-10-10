@@ -31,7 +31,7 @@ describe("appearance mode", () => {
     window.localStorage.setItem(COLOR_THEME_STORAGE_KEY, "openhands-neo");
     window.localStorage.setItem(APPEARANCE_STORAGE_KEY, "openhands-neutral");
 
-    expect(readPersistedAppearance()).toBe("dark");
+    expect(readPersistedAppearance()).toBe("light");
 
     window.localStorage.setItem(APPEARANCE_STORAGE_KEY, "light");
 

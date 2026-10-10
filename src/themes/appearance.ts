@@ -3,7 +3,7 @@ export type AppearanceMode = "dark" | "light";
 /** Separate from color-theme palettes (deep sea / neutral / neo). */
 export const APPEARANCE_STORAGE_KEY = "openhands-appearance";
 
-export const DEFAULT_APPEARANCE_MODE: AppearanceMode = "dark";
+export const DEFAULT_APPEARANCE_MODE: AppearanceMode = "light";
 
 const APPEARANCE_STYLE_TAG_ID = "oh-appearance-override";
 
