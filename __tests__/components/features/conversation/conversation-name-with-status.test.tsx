@@ -51,10 +51,6 @@ vi.mock("#/components/features/conversation/conversation-name", () => ({
   ConversationName: () => <div data-testid="conversation-name" />,
 }));
 
-vi.mock("#/components/features/conversation/right-panel-toggle", () => ({
-  RightPanelToggle: () => null,
-}));
-
 vi.mock("react-i18next", async () => {
   const actual = await vi.importActual("react-i18next");
   return {
@@ -75,6 +71,18 @@ describe("ConversationNameWithStatus", () => {
 
   afterEach(() => {
     vi.unstubAllGlobals();
+  });
+
+  it("keeps git and panel toggles out of the conversation header", () => {
+    renderWithProviders(<ConversationNameWithStatus />);
+
+    expect(
+      screen.queryByTestId("conversation-git-actions-toggle"),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByTestId("conversation-overview-toggle"),
+    ).not.toBeInTheDocument();
+    expect(screen.queryByTestId("right-panel-toggle")).not.toBeInTheDocument();
   });
 
   it("opens the server status menu on click and closes on outside click", async () => {
