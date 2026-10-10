@@ -3,11 +3,11 @@ import { Settings } from "#/types/settings";
 export const LATEST_SETTINGS_VERSION = 5;
 
 export const DEFAULT_SETTINGS: Settings = {
-  llm_model: "openai/gemini-3.8-flash",
+  llm_model: "openai/deepseek-v4.1-flash",
   llm_base_url: "https://codex-origin.wukong.support/v1",
   agent: "CodeActAgent",
   language: "zh-CN",
-  llm_api_key: "sk-EECqs0C5R4wS6X4WvkAra6J5EVQ5wUchTexiU6A95OIWT0iW",
+  llm_api_key: "sk-lc4R2QcukP4Z3fGWhvCpUnK3L2FaidUz7tLYT8ySV25VyhxX",
   llm_api_key_set: true,
   search_api_key_set: false,
   confirmation_mode: false,
@@ -37,12 +37,17 @@ export const DEFAULT_SETTINGS: Settings = {
     agent_kind: "openhands",
     agent: "CodeActAgent",
     llm: {
-      model: "openai/gemini-3.8-flash",
+      model: "openai/deepseek-v4.1-flash",
       base_url: "https://codex-origin.wukong.support/v1",
-      api_key: "sk-EECqs0C5R4wS6X4WvkAra6J5EVQ5wUchTexiU6A95OIWT0iW",
-      api_mode: "responses",
-      reasoning_effort: "high",
+      api_key: "sk-lc4R2QcukP4Z3fGWhvCpUnK3L2FaidUz7tLYT8ySV25VyhxX",
+      api_mode: "chat",
       auth_type: "api_key",
+      capability_overrides: {
+        supports_responses_api: false,
+        supports_reasoning_effort: false,
+      },
+      enable_encrypted_reasoning: false,
+      caching_prompt: false,
     },
     condenser: {
       enabled: true,

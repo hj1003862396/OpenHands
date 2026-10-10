@@ -29,7 +29,13 @@ function TaskListTab() {
             task.status === "in_progress" && "bg-[var(--oh-surface-raised)]",
           )}
         >
-          <TaskItem task={task} />
+          <TaskItem
+            task={{
+              title: task.title,
+              status: task.status,
+              notes: task.notes ?? "",
+            }}
+          />
         </div>
       ))}
     </main>

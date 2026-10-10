@@ -16,12 +16,13 @@ interface SetupLlmStepProps {
 }
 
 /**
- * Pre-fills the LLM form with the OpenAI GPT-5.6 Sol default
- * (`openai/gpt-5.6-sol`), matching `DEFAULT_SETTINGS.llm_model`. The explicit
- * override marks the model dirty so the Next button persists the suggested
- * default immediately.
+ * Pre-fills the LLM form with the DeepSeek default
+ * (`openai/deepseek-v4.1-flash`), matching `DEFAULT_SETTINGS.llm_model`. The
+ * explicit override marks the model dirty so the Next button persists the
+ * suggested default immediately. LiteLLM requires the `openai/` provider
+ * prefix; the custom base URL strips it when calling the proxy.
  */
-export const ONBOARDING_DEFAULT_LLM_MODEL = "openai/gemini-3.8-flash";
+export const ONBOARDING_DEFAULT_LLM_MODEL = "openai/deepseek-v4.1-flash";
 
 /**
  * Step 2: embed the LLM settings form. The screen runs in `embedded`

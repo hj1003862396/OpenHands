@@ -53,7 +53,7 @@ describe("SettingsService", () => {
 
     // Should have normalized settings with derived fields
     expect(settings.agent).toBe("CodeActAgent");
-    expect(settings.llm_model).toBe("openai/gpt-5.6-sol");
+    expect(settings.llm_model).toBe("openai/deepseek-v4.1-flash");
     expect(settings.confirmation_mode).toBe(false);
     expect(settings.security_analyzer).toBe("llm");
   });

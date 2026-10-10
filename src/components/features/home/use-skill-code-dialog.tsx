@@ -136,7 +136,7 @@ export function UseSkillCodeDialog({
             type="button"
             variant="primary"
             testId="use-skill-code-submit"
-            onClick={handleRedeemCode}
+            onClick={() => handleRedeemCode()}
             isDisabled={isCreating || codeInput.trim().length !== 6}
           >
             使用

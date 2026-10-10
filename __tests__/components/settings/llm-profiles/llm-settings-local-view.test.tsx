@@ -357,10 +357,10 @@ describe("LlmSettingsLocalView", () => {
 
       // The profile name is auto-derived from the prefilled default model.
       const nameInput = screen.getByTestId("profile-name-input");
-      expect(nameInput).toHaveValue("gpt-5.6-sol");
+      expect(nameInput).toHaveValue("deepseek-v4.1-flash");
 
       expect(screen.getByTestId("mock-basic-model-input")).toHaveValue(
-        "openai/gpt-5.6-sol",
+        "openai/deepseek-v4.1-flash",
       );
     });
 
@@ -374,7 +374,7 @@ describe("LlmSettingsLocalView", () => {
 
       // The profile name starts from the free-model derived default.
       const nameInput = screen.getByTestId("profile-name-input");
-      expect(nameInput).toHaveValue("gpt-5.6-sol");
+      expect(nameInput).toHaveValue("deepseek-v4.1-flash");
 
       // Go back to list
       await user.click(screen.getByTestId("back-to-profiles"));
@@ -386,7 +386,7 @@ describe("LlmSettingsLocalView", () => {
       // The profile name should return to the free-model derived default
       // again (fresh form).
       const freshNameInput = screen.getByTestId("profile-name-input");
-      expect(freshNameInput).toHaveValue("gpt-5.6-sol");
+      expect(freshNameInput).toHaveValue("deepseek-v4.1-flash");
     });
 
     it("does not carry over values from edit mode to create mode", async () => {
@@ -401,7 +401,7 @@ describe("LlmSettingsLocalView", () => {
 
       // Should be in create view with the free-model derived profile name.
       const nameInput = screen.getByTestId("profile-name-input");
-      expect(nameInput).toHaveValue("gpt-5.6-sol");
+      expect(nameInput).toHaveValue("deepseek-v4.1-flash");
 
       // The key "new-profile" should be used, ensuring a fresh form mount
       // that doesn't inherit any existing profile data

@@ -63,7 +63,7 @@ test.describe("onboarding recent regressions", () => {
   // Regression coverage for #1077 / PR #1089: first-run LLM setup
   // should default users to the configured default provider and model.
 
-  test("defaults the LLM setup step to OpenAI GPT-5.6 Sol", async ({
+  test("defaults the LLM setup step to OpenAI DeepSeek v4.1 Flash", async ({
     page,
   }) => {
     await showOnboarding(page, {
@@ -100,8 +100,8 @@ test.describe("onboarding recent regressions", () => {
     // The model input displays the model ID without the provider prefix.
     await expect(
       modelInput,
-      "first-run onboarding should default to GPT-5.6 Sol",
-    ).toHaveValue("gpt-5.6-sol", {
+      "first-run onboarding should default to DeepSeek v4.1 Flash",
+    ).toHaveValue("deepseek-v4.1-flash", {
       timeout: 10_000,
     });
     await expect(
