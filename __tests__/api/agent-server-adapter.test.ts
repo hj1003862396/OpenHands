@@ -566,7 +566,8 @@ describe("buildStartConversationRequest", () => {
         string,
         {
           kind: string;
-          url: string;
+          url?: string;
+          value?: string;
           description?: string;
           headers?: Record<string, string>;
         }
@@ -584,6 +585,45 @@ describe("buildStartConversationRequest", () => {
         kind: "LookupSecret",
         url: "/api/settings/secrets/folder%2Fname",
         description: "Nested secret",
+        headers: { "X-Session-API-Key": "session-key" },
+      },
+    });
+  });
+
+  it("sends OPENHANDS_AUTOMATION_API_KEY as a StaticSecret using the session key", () => {
+    const payload = buildStartConversationRequest({
+      settings: DEFAULT_SETTINGS,
+      customSecrets: [
+        {
+          name: "OPENHANDS_AUTOMATION_API_KEY",
+          description: "API key for authenticating with the automation backend",
+        },
+        { name: "OTHER_SECRET", description: "Still looked up" },
+      ],
+    }) as {
+      secrets: Record<
+        string,
+        {
+          kind: string;
+          url?: string;
+          value?: string;
+          description?: string;
+          headers?: Record<string, string>;
+        }
+      >;
+    };
+
+    expect(payload.secrets).toEqual({
+      OPENHANDS_AUTOMATION_API_KEY: {
+        kind: "StaticSecret",
+        value: "b9493605c96c4bb218cee5c970a63fcf3e65c676632856fa8dbd8ce4c2bb2e3f",
+        description:
+          "API key for authenticating with the automation backend",
+      },
+      OTHER_SECRET: {
+        kind: "LookupSecret",
+        url: "/api/settings/secrets/OTHER_SECRET",
+        description: "Still looked up",
         headers: { "X-Session-API-Key": "session-key" },
       },
     });

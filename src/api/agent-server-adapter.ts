@@ -1074,6 +1074,25 @@ interface LookupSecret {
   description?: string;
 }
 
+interface StaticSecret {
+  kind: "StaticSecret";
+  value: string;
+  description?: string;
+}
+
+type ConversationSecret = LookupSecret | StaticSecret;
+
+/** Seeded by the local launcher; value equals the session API key. */
+const AUTOMATION_API_KEY_SECRET_NAME = "OPENHANDS_AUTOMATION_API_KEY";
+
+/**
+ * Fixed local session / automation API key.
+ * Always inject this as a StaticSecret so conversation create never
+ * loopback-fetches LookupSecret (which can ReadTimeout for ~30s).
+ */
+const HARDCODED_AUTOMATION_API_KEY =
+  "b9493605c96c4bb218cee5c970a63fcf3e65c676632856fa8dbd8ce4c2bb2e3f";
+
 /** A custom secret's public identity — name + optional description, no value. */
 type CustomSecretInput = { name: string; description?: string };
 
@@ -1090,7 +1109,7 @@ type StartConversationPayloadBase = Record<string, unknown> & {
   secrets_encrypted?: true;
   conversation_id?: string;
   parent_conversation_id?: string;
-  secrets?: Record<string, LookupSecret>;
+  secrets?: Record<string, ConversationSecret>;
   tags?: Record<string, string>;
   client_tools: ClientToolSpec[];
   tool_module_qualnames?: Record<string, string>;
@@ -1141,23 +1160,37 @@ export interface StartConversationOptions {
 
 /**
  * Build the `request.secrets` map shared by the standard and planning
- * conversation builders. Every saved secret rides as a LookupSecret the
+ * conversation builders. Most saved secrets ride as a LookupSecret the
  * agent-server resolves from its own store at spawn time — `request.secrets` is
  * the sole channel, uniform for ACP and non-ACP (agent-canvas#1039). For ACP the
  * resolution runs off the event loop (software-agent-sdk#3510, >=1.25.0), so the
- * loopback fetch can't deadlock. Returns `undefined` when there are no custom
+ * loopback fetch can't deadlock. Non-ACP still resolves LookupSecrets
+ * synchronously on the request path, so OPENHANDS_AUTOMATION_API_KEY (seeded as
+ * the session API key) is sent as a StaticSecret to avoid a self-HTTP ReadTimeout
+ * when creating a conversation. Returns `undefined` when there are no custom
  * secrets so callers can omit the field.
  */
 function buildCustomSecrets(
   customSecrets: CustomSecretInput[] | undefined,
-): Record<string, LookupSecret> | undefined {
+): Record<string, ConversationSecret> | undefined {
   if (!customSecrets?.length) return undefined;
 
   const backend = getEffectiveLocalBackend();
   const headers = backend ? buildAuthHeaders(backend) : {};
 
-  const secrets: Record<string, LookupSecret> = {};
+  const secrets: Record<string, ConversationSecret> = {};
   for (const secret of customSecrets) {
+    // Always use the hardcoded local key as StaticSecret — never LookupSecret
+    // for this name, so create-conversation cannot self-HTTP deadlock.
+    if (secret.name === AUTOMATION_API_KEY_SECRET_NAME) {
+      secrets[secret.name] = {
+        kind: "StaticSecret",
+        value: HARDCODED_AUTOMATION_API_KEY,
+        description: secret.description,
+      };
+      continue;
+    }
+
     const lookupSecret: LookupSecret = {
       kind: "LookupSecret",
       url: `/api/settings/secrets/${encodeURIComponent(secret.name)}`,
