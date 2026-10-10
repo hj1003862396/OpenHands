@@ -1,7 +1,8 @@
 import React from "react";
 import { useTranslation } from "react-i18next";
-import { vscDarkPlus } from "react-syntax-highlighter/dist/esm/styles/prism";
 import { SyntaxHighlighter } from "../../../markdown/syntax-highlighter";
+import { useAppearance } from "#/hooks/use-appearance";
+import { syntaxHighlighterStyleForAppearance } from "#/utils/syntax-highlighter-style";
 import { CopyableContentWrapper } from "#/components/shared/buttons/copyable-content-wrapper";
 import { MAX_CONTENT_LENGTH } from "#/components/conversation-events/chat/event-content-helpers/shared";
 import { I18nKey } from "#/i18n/declaration";
@@ -35,6 +36,7 @@ export function CodeBlock({
   wrapLongLines = false,
 }: CodeBlockProps) {
   const { t } = useTranslation("openhands");
+  const appearance = useAppearance();
   const [isExpanded, setIsExpanded] = React.useState(false);
   const isTruncated = code.length > MAX_CONTENT_LENGTH;
   const display =
@@ -50,7 +52,7 @@ export function CodeBlock({
   const block = (
     <SyntaxHighlighter
       className="rounded-lg text-xs"
-      style={vscDarkPlus}
+      style={syntaxHighlighterStyleForAppearance(appearance)}
       language={language}
       PreTag="div"
       wrapLongLines={wrapLongLines}
@@ -74,7 +76,7 @@ export function CodeBlock({
         <button
           type="button"
           onClick={() => setIsExpanded((prev) => !prev)}
-          className="self-start text-xs text-muted transition-colors hover:text-white hover:underline"
+          className="self-start text-xs text-muted transition-colors hover:text-[var(--oh-foreground)] hover:underline"
         >
           {toggleLabel}
         </button>

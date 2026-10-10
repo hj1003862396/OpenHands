@@ -1,7 +1,8 @@
 import React from "react";
 import { ExtraProps } from "react-markdown";
-import { vscDarkPlus } from "react-syntax-highlighter/dist/esm/styles/prism";
 import { CopyableContentWrapper } from "#/components/shared/buttons/copyable-content-wrapper";
+import { useAppearance } from "#/hooks/use-appearance";
+import { syntaxHighlighterStyleForAppearance } from "#/utils/syntax-highlighter-style";
 import { cn } from "#/utils/utils";
 import { SyntaxHighlighter } from "./syntax-highlighter";
 
@@ -16,6 +17,7 @@ export function code({
 }: React.ClassAttributes<HTMLElement> &
   React.HTMLAttributes<HTMLElement> &
   ExtraProps) {
+  const appearance = useAppearance();
   const match = /language-(\w+)/.exec(className || ""); // get the language
   const codeString = String(children).replace(/\n$/, "");
 
@@ -48,7 +50,7 @@ export function code({
     <CopyableContentWrapper text={codeString}>
       <SyntaxHighlighter
         className="rounded-lg"
-        style={vscDarkPlus}
+        style={syntaxHighlighterStyleForAppearance(appearance)}
         language={match?.[1]}
         PreTag="div"
       >
