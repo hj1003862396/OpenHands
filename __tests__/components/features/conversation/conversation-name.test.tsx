@@ -596,26 +596,16 @@ describe("ConversationNameContextMenu", () => {
 });
 
 describe("ConversationName header menu", () => {
-  it("offers only rename", async () => {
-    const user = userEvent.setup();
+  it("does not render a three-dot menu", () => {
     renderConversationNameWithRouter();
 
-    await user.click(screen.getByTestId("ellipsis-button"));
-
-    expect(screen.getByTestId("rename-button")).toBeInTheDocument();
-    expect(screen.queryByTestId("delete-button")).not.toBeInTheDocument();
-    expect(screen.queryByTestId("stop-button")).not.toBeInTheDocument();
     expect(
-      screen.queryByTestId("display-cost-button"),
+      within(screen.getByTestId("conversation-name")).queryByTestId(
+        "ellipsis-button",
+      ),
     ).not.toBeInTheDocument();
     expect(
-      screen.queryByTestId("show-agent-tools-button"),
-    ).not.toBeInTheDocument();
-    expect(
-      screen.queryByTestId("share-publicly-button"),
-    ).not.toBeInTheDocument();
-    expect(
-      screen.queryByTestId("export-transcript-button"),
+      screen.queryByTestId("conversation-name-context-menu"),
     ).not.toBeInTheDocument();
   });
 });

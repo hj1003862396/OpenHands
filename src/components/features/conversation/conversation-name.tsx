@@ -5,8 +5,6 @@ import { useUpdateConversation } from "#/hooks/mutation/use-update-conversation"
 import { useConversationId } from "#/hooks/use-conversation-id";
 import { displaySuccessToast } from "#/utils/custom-toast-handlers";
 import { I18nKey } from "#/i18n/declaration";
-import { EllipsisButton } from "../conversation-panel/ellipsis-button";
-import { ConversationNameContextMenu } from "./conversation-name-context-menu";
 
 export function ConversationName() {
   const { t } = useTranslation("openhands");
@@ -15,9 +13,7 @@ export function ConversationName() {
   const { mutate: updateConversation } = useUpdateConversation();
 
   const [titleMode, setTitleMode] = React.useState<"view" | "edit">("view");
-  const [contextMenuOpen, setContextMenuOpen] = React.useState(false);
   const inputRef = React.useRef<HTMLInputElement>(null);
-  const ellipsisAnchorRef = React.useRef<HTMLDivElement>(null);
 
   const handleDoubleClick = () => {
     setTitleMode("edit");
@@ -61,19 +57,6 @@ export function ConversationName() {
     }
   };
 
-  const handleEllipsisClick = (event: React.MouseEvent<HTMLButtonElement>) => {
-    event.preventDefault();
-    event.stopPropagation();
-    setContextMenuOpen(!contextMenuOpen);
-  };
-
-  const handleRename = (event: React.MouseEvent<HTMLButtonElement>) => {
-    event.preventDefault();
-    event.stopPropagation();
-    setTitleMode("edit");
-    setContextMenuOpen(false);
-  };
-
   React.useEffect(() => {
     if (titleMode === "edit") {
       inputRef.current?.focus();
@@ -109,26 +92,6 @@ export function ConversationName() {
             title={conversation.title || ""}
           >
             {conversation.title}
-          </div>
-        )}
-
-        {titleMode !== "edit" && (
-          <div
-            ref={ellipsisAnchorRef}
-            className="relative flex items-center shrink-0"
-          >
-            <EllipsisButton
-              onClick={handleEllipsisClick}
-              ariaLabel={t(I18nKey.COMMON$MORE_OPTIONS)}
-            />
-            {contextMenuOpen && (
-              <ConversationNameContextMenu
-                onClose={() => setContextMenuOpen(false)}
-                onRename={handleRename}
-                position="bottom"
-                anchorRef={ellipsisAnchorRef}
-              />
-            )}
           </div>
         )}
       </div>
