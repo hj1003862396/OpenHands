@@ -12,7 +12,6 @@ import {
 import { renderWithProviders } from "test-utils";
 import { ConversationName } from "#/components/features/conversation/conversation-name";
 import { ConversationNameContextMenu } from "#/components/features/conversation/conversation-name-context-menu";
-import AgentServerConversationService from "#/api/conversation-service/agent-server-conversation-service.api";
 import type { Backend } from "#/api/backend-registry/types";
 import type { Conversation } from "#/api/open-hands.types";
 
@@ -22,14 +21,6 @@ const localBackend: Backend = {
   host: "http://localhost:3000",
   apiKey: "",
   kind: "local",
-};
-
-const cloudBackend: Backend = {
-  id: "prod",
-  name: "Production",
-  host: "https://app.all-hands.dev",
-  apiKey: "bearer-token",
-  kind: "cloud",
 };
 
 // Hoisted mocks for controllable return values
@@ -157,6 +148,8 @@ describe("ConversationName", () => {
     expect(container).toBeInTheDocument();
     expect(titleElement).toBeInTheDocument();
     expect(titleElement).toHaveTextContent("Test Conversation");
+    expect(titleElement.className).toContain("text-[var(--oh-foreground)]");
+    expect(titleElement.className).not.toContain("text-white");
   });
 
   it("should switch to edit mode on double click", async () => {
@@ -602,105 +595,27 @@ describe("ConversationNameContextMenu", () => {
   });
 });
 
-describe("ConversationName public sharing", () => {
-  let updatePublicFlagSpy: ReturnType<typeof vi.spyOn>;
-  let writeTextSpy: ReturnType<typeof vi.spyOn>;
-
-  beforeEach(() => {
-    if (!("clipboard" in navigator)) {
-      Object.defineProperty(globalThis.navigator, "clipboard", {
-        configurable: true,
-        value: { writeText: () => Promise.resolve() },
-      });
-    }
-    writeTextSpy = vi
-      .spyOn(navigator.clipboard, "writeText")
-      .mockResolvedValue(undefined);
-    useActiveConversationMock.mockReturnValue({
-      data: {
-        conversation_id: "test-conversation-id",
-        title: "Test Conversation",
-        status: "RUNNING",
-        public: false,
-      } as Conversation,
-    });
-    useActiveBackendMock.mockReturnValue({
-      backend: cloudBackend,
-      orgId: null,
-    });
-    updatePublicFlagSpy = vi
-      .spyOn(AgentServerConversationService, "updateConversationPublicFlag")
-      .mockResolvedValue({ id: "test-conversation-id", public: true } as never);
-  });
-
-  afterEach(() => {
-    updatePublicFlagSpy.mockRestore();
-    writeTextSpy.mockRestore();
-    vi.clearAllMocks();
-  });
-
-  it("renders the Public Share menu item on cloud backends", async () => {
+describe("ConversationName header menu", () => {
+  it("offers only rename", async () => {
     const user = userEvent.setup();
     renderConversationNameWithRouter();
 
     await user.click(screen.getByTestId("ellipsis-button"));
 
-    expect(screen.getByTestId("share-publicly-button")).toBeInTheDocument();
-  });
-
-  it("hides the Public Share menu item on local backends", async () => {
-    useActiveBackendMock.mockReturnValue({
-      backend: localBackend,
-      orgId: null,
-    });
-    const user = userEvent.setup();
-    renderConversationNameWithRouter();
-
-    await user.click(screen.getByTestId("ellipsis-button"));
-
+    expect(screen.getByTestId("rename-button")).toBeInTheDocument();
+    expect(screen.queryByTestId("delete-button")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("stop-button")).not.toBeInTheDocument();
+    expect(
+      screen.queryByTestId("display-cost-button"),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByTestId("show-agent-tools-button"),
+    ).not.toBeInTheDocument();
     expect(
       screen.queryByTestId("share-publicly-button"),
     ).not.toBeInTheDocument();
-  });
-
-  it("calls the update service with the toggled flag when clicked", async () => {
-    const user = userEvent.setup();
-    renderConversationNameWithRouter();
-
-    await user.click(screen.getByTestId("ellipsis-button"));
-    const toggleLabel = screen
-      .getByTestId("share-publicly-button")
-      .closest("label");
-    expect(toggleLabel).not.toBeNull();
-    await user.click(toggleLabel!);
-
-    expect(updatePublicFlagSpy).toHaveBeenCalledWith(
-      "test-conversation-id",
-      true,
-    );
-  });
-
-  it("uses the cloud environment domain for the share link and clipboard copy", async () => {
-    useActiveConversationMock.mockReturnValue({
-      data: {
-        conversation_id: "test-conversation-id",
-        title: "Test Conversation",
-        status: "RUNNING",
-        public: true,
-      } as Conversation,
-    });
-    const expectedUrl =
-      "https://app.all-hands.dev/shared/conversations/test-conversation-id";
-    const user = userEvent.setup();
-    renderConversationNameWithRouter();
-
-    await user.click(screen.getByTestId("ellipsis-button"));
-    expect(screen.getByTestId("open-share-link-button")).toHaveAttribute(
-      "href",
-      expectedUrl,
-    );
-
-    await user.click(screen.getByTestId("copy-share-link-button"));
-    expect(writeTextSpy).toHaveBeenCalledWith(expectedUrl);
+    expect(
+      screen.queryByTestId("export-transcript-button"),
+    ).not.toBeInTheDocument();
   });
 });
