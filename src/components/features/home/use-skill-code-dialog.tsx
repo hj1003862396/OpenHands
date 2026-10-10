@@ -34,8 +34,8 @@ function savedCodesNewestFirst(): SkillShareCodeEntry[] {
 
 /**
  * Modal for redeeming a 6-digit skill share code. Lists locally saved codes
- * (newest first); choosing a row fills the input. 「使用」 starts a chat with
- * /{skillName}.
+ * (newest first); choosing a row redeems immediately. 「使用」 redeems the
+ * typed code. Both start a chat with /{skillName}.
  */
 export function UseSkillCodeDialog({
   onClose,
@@ -53,9 +53,9 @@ export function UseSkillCodeDialog({
   const [codeInput, setCodeInput] = useState("");
   const [savedCodes] = useState(savedCodesNewestFirst);
 
-  const handleRedeemCode = () => {
+  const handleRedeemCode = (rawCode?: string) => {
     if (isCreating) return;
-    const trimmed = codeInput.trim();
+    const trimmed = (rawCode ?? codeInput).trim();
     if (!isValidSkillShareCode(trimmed)) {
       displayErrorToast("请输入六位数字技能码");
       return;
@@ -65,6 +65,8 @@ export function UseSkillCodeDialog({
       displayErrorToast("未找到该技能码，请确认后重试");
       return;
     }
+
+    setCodeInput(trimmed);
 
     const toastId = toast.loading(
       `正在使用技能「${entry.skillName}」开聊…`,
@@ -156,7 +158,7 @@ export function UseSkillCodeDialog({
                   type="button"
                   data-testid="saved-skill-code-row"
                   data-code={entry.code}
-                  onClick={() => setCodeInput(entry.code)}
+                  onClick={() => handleRedeemCode(entry.code)}
                   className="flex w-full cursor-pointer items-center justify-between gap-3 rounded-lg px-2 py-1.5 text-left text-sm hover:bg-[var(--oh-hover-wash)]"
                 >
                   <span className="font-mono tabular-nums text-[var(--oh-foreground)]">

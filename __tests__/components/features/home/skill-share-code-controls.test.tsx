@@ -47,7 +47,7 @@ describe("SkillShareCodeControls", () => {
     vi.restoreAllMocks();
   });
 
-  it("opens a dialog from 使用技能码 and shows an empty saved-code list", async () => {
+  it("opens a redeem dialog from 使用技能码 with empty saved list", async () => {
     vi.spyOn(SkillsService, "getSkills").mockResolvedValue([]);
     const user = userEvent.setup();
     renderWithProviders(<SkillShareCodeControls />);
@@ -66,7 +66,7 @@ describe("SkillShareCodeControls", () => {
     );
   });
 
-  it("fills the input from a saved code and redeems it into a conversation", async () => {
+  it("lists saved codes newest-first and redeems on row click", async () => {
     vi.spyOn(SkillsService, "getSkills").mockResolvedValue([]);
     writeSkillShareCodes({
       "111111": entry("111111", "older-skill", 1),
@@ -92,9 +92,6 @@ describe("SkillShareCodeControls", () => {
     expect(rows[0]).toHaveTextContent("newer-skill");
 
     await user.click(rows[0]);
-    expect(screen.getByTestId("use-skill-code-input")).toHaveValue("222222");
-
-    await user.click(screen.getByTestId("use-skill-code-submit"));
 
     await waitFor(() => expect(createSpy).toHaveBeenCalledTimes(1));
     expect(createSpy).toHaveBeenCalledWith(
