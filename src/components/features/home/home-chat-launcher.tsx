@@ -156,9 +156,9 @@ export function HomeChatLauncher() {
   return (
     <div
       data-testid="home-chat-launcher"
-      className="flex w-full flex-col items-center pt-[max(4rem,28vh)] pb-10"
+      className="flex w-full flex-col items-center pt-[max(4.5rem,20vh)] pb-10"
     >
-      <div className="flex w-full max-w-[800px] flex-col gap-4 md:px-4">
+      <div className="flex w-full max-w-[760px] flex-col gap-5 md:px-4">
         <div className="flex w-full justify-center">
           <HomeHeaderTitle />
         </div>
@@ -168,6 +168,8 @@ export function HomeChatLauncher() {
             onSubmit={handleSubmitWithModelGuard}
             onFilesPaste={handleUpload}
             disabled={isCreating || llmBlocked}
+            containerClassName="oh-home-input-float border border-[var(--oh-border-subtle)]"
+            buttonClassName="oh-press"
           />
         </div>
 

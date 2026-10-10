@@ -118,7 +118,7 @@ describe("ContextWindowMeter", () => {
     renderWithProviders(<ContextWindowMeter />);
 
     const trigger = screen.getByTestId("context-window-meter");
-    expect(trigger).toHaveClass("hover:bg-white/10");
+    expect(trigger).toHaveClass("hover:bg-[var(--oh-hover-wash)]");
     expect(trigger.className).not.toContain("--oh-interactive-hover");
   });
 

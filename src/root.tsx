@@ -51,12 +51,23 @@ import {
   applyColorTheme,
   readPersistedColorTheme,
 } from "#/themes/color-themes";
+import { useAppearance } from "#/hooks/use-appearance";
+import { applyAppearance } from "#/themes/appearance";
 
 /** Applies the persisted color-theme palette to document.body on mount. */
 function ColorThemeApplier() {
   React.useEffect(() => {
     applyColorTheme(readPersistedColorTheme());
   }, []);
+  return null;
+}
+
+/** Keeps document `data-theme` + `color-scheme` aligned with appearance mode. */
+function AppearanceApplier() {
+  const appearance = useAppearance();
+  React.useLayoutEffect(() => {
+    applyAppearance(appearance);
+  }, [appearance]);
   return null;
 }
 
@@ -90,16 +101,24 @@ const BackendFormModal = React.lazy(() =>
 );
 
 export function Layout({ children }: { children: React.ReactNode }) {
+  const appearance = useAppearance();
+
   return (
-    <html lang="en">
+    <html lang="en" data-theme={appearance} style={{ colorScheme: appearance }}>
       <head>
         <meta charSet="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <Meta />
         <Links />
       </head>
-      <body data-agent-server-ui="" className="m-0">
-        <AgentServerUIRoot contentClassName="min-h-screen">
+      <body
+        data-agent-server-ui=""
+        data-theme={appearance}
+        style={{ colorScheme: appearance }}
+        className="m-0"
+      >
+        <AgentServerUIRoot theme={appearance} contentClassName="min-h-screen">
+          <AppearanceApplier />
           <ColorThemeApplier />
           {children}
           <Toaster toastOptions={TOAST_OPTIONS} />
@@ -114,9 +133,9 @@ export function Layout({ children }: { children: React.ReactNode }) {
 
 function AgentServerBootstrapLoading() {
   return (
-    <main className="min-h-screen bg-base px-6 py-10 text-white">
+    <main className="min-h-screen bg-base px-6 py-10 text-[var(--oh-foreground)]">
       <div className="mx-auto flex min-h-screen max-w-6xl items-center justify-center">
-        <div className="rounded-3xl border border-white/10 bg-base/80 px-8 py-10 shadow-2xl">
+        <div className="rounded-3xl border border-[var(--oh-border-hairline)] bg-base/80 px-8 py-10 shadow-2xl">
           <LoadingSpinner size="large" />
         </div>
       </div>

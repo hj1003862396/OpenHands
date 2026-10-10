@@ -12,6 +12,8 @@ import { useConfig } from "#/hooks/query/use-config";
 import { Sidebar } from "#/components/features/sidebar/sidebar";
 import { SidebarMobileNavProvider } from "#/components/features/sidebar/sidebar-mobile-nav-context";
 import { SidebarMobileMenuBar } from "#/components/features/sidebar/sidebar-mobile-menu-bar";
+import { useSidebarStore } from "#/stores/sidebar-store";
+import { cn } from "#/utils/utils";
 import { useSettings } from "#/hooks/query/use-settings";
 import { useEnsureActiveProfile } from "#/hooks/use-ensure-active-profile";
 import { useMigrateEnabledSkills } from "#/hooks/use-migrate-enabled-skills";
@@ -87,6 +89,7 @@ export default function MainApp() {
   useEnsureActiveProfile();
   // One-shot move from the catalog deny-list to an explicit allow-list.
   useMigrateEnabledSkills();
+  const sidebarCollapsed = useSidebarStore((state) => state.collapsed);
 
   React.useEffect(() => {
     if (settings?.language) {
@@ -115,12 +118,17 @@ export default function MainApp() {
         <SidebarMobileNavProvider>
           <div
             data-testid="root-layout"
-            className="h-screen lg:min-w-5xl flex flex-col md:flex-row bg-base overflow-hidden p-0"
+            className="oh-shell-wash h-screen lg:min-w-5xl flex flex-col md:flex-row bg-base overflow-hidden p-0"
           >
             <title>{appTitle}</title>
             <Sidebar />
 
-            <div className="flex min-h-0 flex-col w-full min-w-0 h-full gap-3">
+            <div
+              className={cn(
+                "flex min-h-0 w-full min-w-0 h-full flex-col gap-3 transition-[padding] duration-200 motion-reduce:transition-none",
+                sidebarCollapsed ? "md:pl-[60px]" : "md:pl-[300px]",
+              )}
+            >
               {!hideMobileSidebarMenuBar ? <SidebarMobileMenuBar /> : null}
               {config.data &&
                 (config.data.maintenance_start_time ||

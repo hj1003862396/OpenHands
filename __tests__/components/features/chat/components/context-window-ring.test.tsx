@@ -21,7 +21,7 @@ const MIN_RATIO = 3;
 const SURFACE_STOP = "--cool-grey-925"; // --oh-surface, the composer background
 const FOREGROUND_STOP = "--cool-grey-100"; // --oh-foreground, the neutral arc
 
-/** `chatInputIconButtonClassName` fills the trigger with `hover:bg-white/10`. */
+/** Dark `--oh-hover-wash` is white at 10%, the chat-input trigger hover fill. */
 const HOVER_OVERLAY = "#FFFFFF";
 const HOVER_ALPHA = 0.1;
 

@@ -23,8 +23,8 @@ export function sidebarHeaderRowClassName(collapsed: boolean): string {
 }
 
 export const SIDEBAR_ROW_INTERACTIVE_CLASS = {
-  active: "bg-tertiary text-white font-normal",
-  idle: "text-[var(--oh-muted)] hover:text-white hover:bg-[var(--oh-surface-raised)]",
+  active: "bg-tertiary text-[var(--oh-foreground)] font-normal",
+  idle: "text-[var(--oh-muted)] hover:text-[var(--oh-foreground)] hover:bg-[var(--oh-surface-raised)]",
 } as const;
 
 export function sidebarNavListClassName(collapsed: boolean): string {
@@ -67,8 +67,8 @@ export function sidebarCollapsedIconGlyphClassName(active: boolean): string {
     // Do not set a narrow `w-[18px]` here — with horizontal padding it shrinks the glyph.
     "relative z-[1] flex h-full w-full items-center justify-start pl-2.5 [&_svg]:shrink-0",
     active
-      ? "text-white font-normal"
-      : "text-[var(--oh-muted)] group-hover:text-white",
+      ? "text-[var(--oh-foreground)] font-normal"
+      : "text-[var(--oh-muted)] group-hover:text-[var(--oh-foreground)]",
   );
 }
 
@@ -80,7 +80,7 @@ export function sidebarNavLabelClassName(collapsed: boolean): string {
 }
 
 export const SIDEBAR_ICON_BUTTON_CLASS = cn(
-  "inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md",
+  "oh-press inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md",
   navInteractiveTransitionClassName,
   "cursor-pointer",
 );
@@ -96,5 +96,5 @@ export const SIDEBAR_COLLAPSE_TOGGLE_OVERLAY_CLASS = cn(
   "items-center justify-center rounded-md",
   navInteractiveTransitionClassName,
   "cursor-pointer",
-  "text-[var(--oh-muted)] hover:text-white hover:bg-[var(--oh-surface-raised)]",
+  "text-[var(--oh-muted)] hover:text-[var(--oh-foreground)] hover:bg-[var(--oh-surface-raised)]",
 );

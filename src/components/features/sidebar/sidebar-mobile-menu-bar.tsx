@@ -16,7 +16,7 @@ export function SidebarMobileMenuBar() {
 
   return (
     <header
-      className="flex md:hidden h-12 shrink-0 items-center gap-2 px-2.5"
+      className="oh-glass-surface flex md:hidden h-12 shrink-0 items-center gap-2 border-b border-[var(--oh-border-hairline)] px-2.5"
       aria-label={t(I18nKey.SIDEBAR$NAVIGATION_LABEL)}
     >
       <SidebarMobileMenuToggle />

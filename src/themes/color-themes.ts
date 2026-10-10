@@ -225,7 +225,9 @@ const THEME_STYLE_TAG_ID = "oh-color-theme-override";
  * Why heroui variables:
  *   HeroUI stores colors as HSL channels in --heroui-* vars on [data-theme=dark].
  *   They reference their own token system and are unaffected by --cool-grey-*
- *   changes, so we override them from the same injected sheet.
+ *   changes, so we override them from the same injected sheet. The override is
+ *   scoped to [data-theme=dark] so a light appearance (data-theme=light) is not
+ *   forced back onto the dark channel palette.
  *
  * Why doubled selectors + re-append on every call:
  *   "Later sheet wins the tie" cannot be relied on: in the built SPA
@@ -253,15 +255,14 @@ export function applyColorTheme(key: ColorThemeKey): void {
     .map(([p, v]) => `  ${p}: ${v};`)
     .join("\n");
 
-  // Target both selectors for heroui vars:
-  //   [data-agent-server-ui] — covers document.body (portal destination) so
-  //     portalled popover/listbox content inherits the overridden values.
-  //   [data-theme=dark]      — covers the inner AgentServerUIRoot wrapper so
-  //     components scoped inside the dark theme wrapper also pick them up.
-  // Both are doubled to out-specify the base sheet regardless of stylesheet
-  // order (see the doc comment above).
+  // Scale + brand tokens apply on every scope root (palette, not appearance).
+  // HeroUI channels apply only under [data-theme=dark]. Light appearance sets
+  // its own channels from the appearance sheet, and applyAppearance stamps
+  // data-theme onto document.body so portalled content still inherits them.
+  // Both selectors are doubled to out-specify the base sheet regardless of
+  // stylesheet order (see the doc comment above).
   const css = [
-    `[data-agent-server-ui][data-agent-server-ui] {\n${scaleDecls}\n${herouiDecls}\n${tokenDecls}\n}`,
+    `[data-agent-server-ui][data-agent-server-ui] {\n${scaleDecls}\n${tokenDecls}\n}`,
     `[data-theme=dark][data-theme=dark] {\n${herouiDecls}\n}`,
   ].join("\n");
 

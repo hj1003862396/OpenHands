@@ -43,7 +43,7 @@ export function OpenHandsLogoButton({
         className={cn("shrink-0 object-contain", logoClassName)}
       />
       {showWordmark ? (
-        <span className="truncate text-sm font-medium tracking-tight text-white">
+        <span className="truncate text-sm font-medium tracking-tight text-[var(--oh-foreground)]">
           {wordmark}
         </span>
       ) : null}
