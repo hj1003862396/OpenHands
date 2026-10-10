@@ -1,7 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { GitControlBarRepoButton } from "./git-control-bar-repo-button";
-import { GitControlBarBranchButton } from "./git-control-bar-branch-button";
 import { GitControlBarPullButton } from "./git-control-bar-pull-button";
 import { GitControlBarPushButton } from "./git-control-bar-push-button";
 import { GitControlBarPrButton } from "./git-control-bar-pr-button";
@@ -70,22 +69,17 @@ export function GitControlBar({ onSuggestionsClick }: GitControlBarProps) {
     useCreateConversation();
 
   // Priority: conversation data > task data > locally-detected git info.
-  // The local fallback runs `git remote get-url origin` / `git rev-parse --abbrev-ref HEAD`
-  // in the conversation's working dir so local-workspace conversations can
-  // still display a repo and branch in the control bar.
+  // The local fallback runs `git remote get-url origin` in the conversation's
+  // working dir so local-workspace conversations can still display a repo.
   const conversationRepository =
     conversation?.selected_repository || repositoryInfo?.selectedRepository;
   const conversationProvider = (conversation?.git_provider ||
     repositoryInfo?.gitProvider) as Provider | undefined;
-  const conversationBranch =
-    conversation?.selected_branch || repositoryInfo?.selectedBranch;
 
   const selectedRepository =
     conversationRepository || localGitInfo?.repository || undefined;
   const gitProvider = (conversationProvider ||
     localGitInfo?.provider) as Provider;
-  const selectedBranch =
-    conversationBranch || localGitInfo?.branch || undefined;
 
   // For folder-only conversations (no remote repo), surface the basename of
   // the originally attached workspace path so the button reads e.g. "test"
@@ -215,11 +209,12 @@ export function GitControlBar({ onSuggestionsClick }: GitControlBarProps) {
   const isRepoButtonInert = isLocalBackend && !hasRepository;
 
   // True when the bar will render at least one chip (cloud always shows
-  // "Open Repository"; local needs a repo or a workspace name; selected
-  // branch or push/pull/PR also count). When false, the bar has nothing to
-  // show — return null so the wrapper above collapses to its natural padding
-  // instead of leaving an empty DOM node below the chat input.
-  const hasAnyContent = showRepoButton || !!selectedBranch || hasRepository;
+  // "Open Repository"; local needs a repo or a workspace name; push/pull/PR
+  // also count). A selected branch alone does not keep the bar visible.
+  // When false, the bar has nothing to show — return null so the wrapper
+  // above collapses to its natural padding instead of leaving an empty DOM
+  // node below the chat input.
+  const hasAnyContent = showRepoButton || hasRepository;
   if (!hasAnyContent) return null;
 
   return (
@@ -232,14 +227,6 @@ export function GitControlBar({ onSuggestionsClick }: GitControlBarProps) {
             workspaceName={workspaceName}
             onClick={() => setIsOpenRepoModalOpen(true)}
             disabled={!isConversationReady || isRepoButtonInert}
-          />
-        ) : null}
-
-        {selectedBranch ? (
-          <GitControlBarBranchButton
-            selectedBranch={selectedBranch}
-            selectedRepository={selectedRepository}
-            gitProvider={gitProvider}
           />
         ) : null}
 

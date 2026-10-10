@@ -51,7 +51,9 @@ vi.mock("#/components/features/chat/git-control-bar-repo-button", () => ({
   ),
 }));
 vi.mock("#/components/features/chat/git-control-bar-branch-button", () => ({
-  GitControlBarBranchButton: () => null,
+  GitControlBarBranchButton: () => (
+    <button data-testid="git-control-bar-branch-button" type="button" />
+  ),
 }));
 vi.mock("#/components/features/chat/git-control-bar-pull-button", () => ({
   GitControlBarPullButton: () => null,
@@ -164,6 +166,37 @@ describe("GitControlBar repo button visibility", () => {
         markPendingMessageError: vi.fn(),
       })) as unknown as typeof useOptimisticUserMessageStore);
     vi.mocked(getStoredConversationMetadata).mockReturnValue(null);
+  });
+
+  it("hides the bar on a local backend when only a branch is known", () => {
+    vi.mocked(useActiveBackend).mockReturnValue(makeBackend("local"));
+    vi.mocked(useLocalGitInfo).mockReturnValue({
+      data: { branch: "main" },
+    } as unknown as ReturnType<typeof useLocalGitInfo>);
+
+    const { container } = renderWithProviders(
+      <GitControlBar onSuggestionsClick={vi.fn()} />,
+    );
+
+    expect(container).toBeEmptyDOMElement();
+  });
+
+  it("does not render the branch pill when a repository is connected", () => {
+    vi.mocked(useActiveBackend).mockReturnValue(makeBackend("cloud"));
+    vi.mocked(useActiveConversation).mockReturnValue({
+      data: {
+        id: "test-conversation-id",
+        selected_repository: "user/repo",
+        git_provider: "github",
+        selected_branch: "main",
+      },
+    } as ReturnType<typeof useActiveConversation>);
+
+    renderWithProviders(<GitControlBar onSuggestionsClick={vi.fn()} />);
+
+    expect(
+      screen.queryByTestId("git-control-bar-branch-button"),
+    ).not.toBeInTheDocument();
   });
 
   it("hides the repo button on a local backend with no repository or workspace name", () => {
