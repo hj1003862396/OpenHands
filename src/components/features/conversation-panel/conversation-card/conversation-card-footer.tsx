@@ -127,10 +127,6 @@ export function ConversationCardFooter({
     }
   }
 
-  // Match title text start: 18px status column + gap-2 (8px).
-  const metadataIndentClass =
-    executionStatus !== undefined ? "pl-[26px]" : undefined;
-
   const displayTags = showTags ? getDisplayConversationTags(tags) : [];
 
   return (
@@ -140,12 +136,7 @@ export function ConversationCardFooter({
         isPaused && "opacity-60",
       )}
     >
-      <div
-        className={cn(
-          "flex flex-row items-center gap-2 w-full min-w-0",
-          showRepositoryMetadata && metadataIndentClass,
-        )}
-      >
+      <div className="flex flex-row items-center gap-2 w-full min-w-0">
         {showRepositoryMetadata &&
           (selectedRepository?.selected_repository ? (
             <ConversationRepoLink selectedRepository={selectedRepository} />
@@ -163,7 +154,7 @@ export function ConversationCardFooter({
         </div>
       </div>
       {chip ? (
-        <div className={metadataIndentClass}>
+        <div>
           <span
             data-testid="conversation-card-agent-chip"
             className={CONVERSATION_CARD_META_CHIP_CLASSNAME}
@@ -181,7 +172,7 @@ export function ConversationCardFooter({
         </div>
       ) : null}
       {isArchived ? (
-        <div className={metadataIndentClass}>
+        <div>
           <span
             data-testid="conversation-card-archived-chip"
             className={CONVERSATION_CARD_META_CHIP_CLASSNAME}
@@ -191,7 +182,7 @@ export function ConversationCardFooter({
         </div>
       ) : null}
       {displayTags.length > 0 ? (
-        <div className={metadataIndentClass}>
+        <div>
           <ConversationTagChips tags={displayTags} />
         </div>
       ) : null}
