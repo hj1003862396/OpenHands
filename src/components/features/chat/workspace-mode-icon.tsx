@@ -7,5 +7,7 @@ export function WorkspaceModeIcon({ mode }: { mode: WorkspaceMode }) {
     return <GitBranch className="size-3" strokeWidth={2} aria-hidden />;
   }
 
-  return <RepoForkedIcon width={12} height={12} color="white" aria-hidden />;
+  return (
+    <RepoForkedIcon width={12} height={12} color="currentColor" aria-hidden />
+  );
 }

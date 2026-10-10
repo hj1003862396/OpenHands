@@ -52,11 +52,11 @@ export function GitControlBarBranchButton({
           : "border border-[rgba(71,74,84,0.50)] bg-transparent cursor-not-allowed min-w-[108px]",
       )}
     >
-      <div className="w-3 h-3 flex items-center justify-center flex-shrink-0">
-        <BranchIcon width={12} height={12} color="white" />
+      <div className="w-3 h-3 flex items-center justify-center flex-shrink-0 text-[var(--oh-foreground)]">
+        <BranchIcon width={12} height={12} color="var(--oh-foreground)" />
       </div>
       <div
-        className="font-normal text-white text-sm leading-5 truncate"
+        className="font-normal text-[var(--oh-foreground)] text-sm leading-5 truncate"
         title={buttonText}
       >
         {buttonText}
