@@ -32,6 +32,7 @@ import {
   shouldUseMainAppCookieAuth,
 } from "#/api/main-app-auth";
 import { getEffectiveLocalBackend } from "#/api/backend-registry/active-store";
+import { makeDefaultLocalBackend } from "#/api/backend-registry/default-backend";
 import { useActiveBackendContext } from "#/contexts/active-backend-context";
 import {
   isCloudBackendApiKeyOrNetworkHealthError,
@@ -300,11 +301,18 @@ export default function App() {
   // active backend really is the locked Cloud host, so the stale-flag bypass
   // concerns above don't apply here.)
   const shouldCheckMainAppAuth = shouldUseMainAppCookieAuth();
+  // When the launcher/env already provides a host + session API key,
+  // makeDefaultLocalBackend() seeds Local automatically — skip the
+  // first-run wizard so the user lands on the main UI immediately.
+  // Locked-to-Cloud still owns its own Cloud-login gate (default local
+  // seeding is disabled there). Auth truly missing still hits
+  // ApiKeyEntryScreen below.
+  const hasSeededDefaultLocalBackend = makeDefaultLocalBackend() !== null;
   const showFirstRunOnboarding = isLockedToCloud
     ? !shouldCheckMainAppAuth &&
       (!isActiveLockedCloudBackend ||
         (lockedCloudAuthMode !== "cookie" && !onboardingCompleted))
-    : !onboardingCompleted;
+    : !onboardingCompleted && !hasSeededDefaultLocalBackend;
   const mainAppAuth = useQuery({
     queryKey: QUERY_KEYS.MAIN_APP_COOKIE_AUTH,
     queryFn: authenticateWithMainAppCookie,

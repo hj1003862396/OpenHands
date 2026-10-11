@@ -208,6 +208,12 @@ describe("App root agent-server availability guard", () => {
   });
 
   it("lets root-level onboarding navigate to the launched conversation before closing", async () => {
+    // No baked session key → makeDefaultLocalBackend() is null, so
+    // first-run onboarding still owns this path.
+    vi.stubEnv("VITE_SESSION_API_KEY", "");
+    delete (window as unknown as Record<string, unknown>)
+      .__AGENT_CANVAS_SESSION_API_KEY__;
+    __resetActiveStoreForTests();
     server.use(
       http.get("*/server_info", () =>
         HttpResponse.json({ uptime: 0, idle_time: 0, version: "1.28.1" }),
@@ -656,20 +662,11 @@ describe("App root agent-server availability guard", () => {
     ).not.toBeInTheDocument();
   });
 
-  it("shows first-run onboarding for the launcher-seeded default-local backend even when the agent-server reports a configured LLM", async () => {
-    // Regression for mock-llm-onboarding-regressions.spec.ts:16
-    // ("keeps the modal open on backdrop click and Escape") and
-    // mock-llm-auth-modes.spec.ts:57 ("reaches the onboarding modal
-    // without pre-seeded localStorage"). The shared mock-LLM
-    // agent-server retains a previously-configured LLM across browser
-    // sessions, so a genuinely fresh browser install (launcher-seeded
-    // default-local backend, no `openhands-onboarded` flag) must NOT
-    // have onboarding auto-marked complete by backend readiness.
+  it("skips first-run onboarding when a launcher-seeded default-local backend is available", async () => {
+    // Host + session API key from env seed Local via makeDefaultLocalBackend();
+    // the first-run wizard must not block the main UI.
     vi.stubEnv("VITE_BACKEND_BASE_URL", "http://127.0.0.1:8000");
     vi.stubEnv("VITE_SESSION_API_KEY", "test-session-key");
-    // The launcher-seeded default-local backend (id
-    // SEEDED_DEFAULT_BACKEND_ID) is created from these env stubs by
-    // readStoredBackends().
     __resetActiveStoreForTests();
     server.use(
       http.get("*/api/settings", () =>
@@ -688,15 +685,11 @@ describe("App root agent-server availability guard", () => {
     renderApp(["/"]);
 
     await waitFor(() => {
-      expect(
-        screen.getByTestId("first-run-onboarding-screen"),
-      ).toBeInTheDocument();
+      expect(screen.getByTestId("app-outlet")).toBeInTheDocument();
     });
-    expect(screen.queryByTestId("app-outlet")).not.toBeInTheDocument();
-
     expect(
-      window.localStorage.getItem(ONBOARDING_COMPLETED_STORAGE_KEY),
-    ).toBeNull();
+      screen.queryByTestId("first-run-onboarding-screen"),
+    ).not.toBeInTheDocument();
   });
 
   it("renders Cloud login directly for a fresh locked-to-Cloud first run", async () => {
