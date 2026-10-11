@@ -20,7 +20,6 @@ import {
   type SkillShareCodeEntry,
 } from "#/utils/skill-share-codes";
 import { resolveSkillShareShortTitle } from "#/utils/resolve-skill-share-title";
-import { prepareIsolatedSkillWorkspace } from "#/utils/prepare-isolated-skill-workspace";
 import { cn } from "#/utils/utils";
 import { ModalBackdrop } from "#/components/shared/modals/modal-backdrop";
 import { ModalBody } from "#/components/shared/modals/modal-body";
@@ -104,41 +103,16 @@ export function UseSkillCodeDialog({
         return;
       }
 
-      toast.loading(`正在准备隔离工作区「${entry.skillName}」…`, {
+      toast.loading(`正在使用技能「${entry.skillName}」开聊…`, {
         ...TOAST_OPTIONS,
         id: toastId,
       });
 
       try {
-        // Never reuse the creator workspace — copy only this skill into a
-        // fresh hex dir so sibling skills / drafts stay invisible.
-        const isolated = await prepareIsolatedSkillWorkspace([
-          {
-            skillName: entry.skillName,
-            skillPath: entry.skillPath,
-          },
-        ]);
-        if (isolated.seededSkills.length === 0) {
-          toast.dismiss(toastId);
-          displayErrorToast(
-            "未找到该技能文件，无法在隔离工作区中打开。请确认技能仍在本机。",
-          );
-          return;
-        }
-
-        toast.loading(`正在使用技能「${entry.skillName}」开聊…`, {
-          ...TOAST_OPTIONS,
-          id: toastId,
-        });
-
         const data = await createConversation({
           query: skillRedeemLaunchQuery(entry.skillName),
-          workingDir: isolated.workspacePath,
-          workspaceMode: "local_repo",
-          skillLoading: {
-            loadUserSkills: false,
-            loadProjectSkills: true,
-          },
+          workingDir: entry.workspacePath ?? undefined,
+          workspaceMode: entry.workspacePath ? "local_repo" : undefined,
           entryPoint: "home_use_skill_code",
         });
         toast.dismiss(toastId);

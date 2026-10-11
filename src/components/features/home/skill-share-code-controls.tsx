@@ -11,7 +11,6 @@ import {
   TOAST_OPTIONS,
 } from "#/utils/custom-toast-handlers";
 import { markSkillSharePendingConversation } from "#/utils/skill-creator-events";
-import { prepareIsolatedSkillWorkspace } from "#/utils/prepare-isolated-skill-workspace";
 import { cn } from "#/utils/utils";
 import { formControlTransitionClassName } from "#/utils/form-control-classes";
 import { UseSkillCodeDialog } from "./use-skill-code-dialog";
@@ -56,21 +55,8 @@ export function SkillShareCodeControls({
 
     void (async () => {
       try {
-        // Fresh workspace with only the writing-skills skill seeded — no
-        // sibling skills from other create sessions.
-        const isolated = await prepareIsolatedSkillWorkspace([
-          { skillName: WRITING_SKILLS_NAME },
-        ]);
         const data = await createConversation({
           query: SKILL_CREATOR_LAUNCH_QUERY,
-          workingDir: isolated.workspacePath,
-          workspaceMode: "local_repo",
-          skillLoading: {
-            // Prefer the seeded copy; fall back to user skills only when
-            // seeding failed so /xiaoming-writing-skills still resolves.
-            loadUserSkills: isolated.seededSkills.length === 0,
-            loadProjectSkills: true,
-          },
           entryPoint: "home_create_skill_code",
         });
         toast.dismiss(toastId);
