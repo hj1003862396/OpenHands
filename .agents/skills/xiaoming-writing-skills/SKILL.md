@@ -19,10 +19,6 @@ description: "在创建新技能、编辑现有技能或在部署前验证技能
 
 **官方指南：** 关于 Anthropic 官方技能 (skill) 编写最佳实践，见 anthropic-best-practices.md。该文档提供了补充本技能以 TDD 为核心方法的额外模式和指南。
 
-## 工作区隔离
-
-只在当前工作区内操作。不要列出或读取其他对话工作区（兄弟目录），也不要查看 `~/.openhands/skills` / `~/.agents/skills` 下的其他技能。
-
 ## 什么是技能 (Skill)？
 
 **技能 (skill)** 是经过验证的技术、模式或工具的参考指南。技能帮助未来的 Claude 实例找到并应用有效方法。

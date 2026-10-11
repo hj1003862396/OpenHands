@@ -13,15 +13,7 @@ import {
   writeSkillShareCodes,
   type SkillShareCodeEntry,
 } from "#/utils/skill-share-codes";
-import { prepareIsolatedSkillWorkspace } from "#/utils/prepare-isolated-skill-workspace";
 import { renderWithProviders } from "../../../../test-utils";
-
-vi.mock("#/utils/prepare-isolated-skill-workspace", () => ({
-  prepareIsolatedSkillWorkspace: vi.fn(async (sources: Array<{ skillName: string }>) => ({
-    workspacePath: `/tmp/isolated-ws/${sources[0]?.skillName ?? "skill"}`,
-    seededSkills: sources.map((s) => s.skillName),
-  })),
-}));
 
 function entry(
   code: string,
@@ -149,20 +141,14 @@ describe("SkillShareCodeControls", () => {
     await user.click(rows[0]);
 
     await waitFor(() => expect(createSpy).toHaveBeenCalledTimes(1));
-    expect(prepareIsolatedSkillWorkspace).toHaveBeenCalledWith([
-      expect.objectContaining({ skillName: "newer-skill" }),
-    ]);
     expect(createSpy).toHaveBeenCalledWith(
       expect.objectContaining({
         initialUserMsg: "/newer-skill\n\n请全程用简体中文与我交流。",
-        workingDirOverride: "/tmp/isolated-ws/newer-skill",
+        workingDirOverride: "/tmp/from-server",
         workspaceMode: "local_repo",
-        skillLoading: {
-          loadUserSkills: false,
-          loadProjectSkills: true,
-        },
       }),
     );
+    expect(createSpy.mock.calls[0]?.[0]).not.toHaveProperty("skillLoading");
     await waitFor(() =>
       expect(navigate).toHaveBeenCalledWith("/conversations/conv-skill"),
     );
@@ -270,7 +256,7 @@ description: 这是一段很长的 YAML 描述，不应该出现在分享文案�
     expect(share).not.toHaveTextContent("已复制");
   });
 
-  it("create-skill uses an isolated workspace seeded with writing-skills only", async () => {
+  it("create-skill launches xiaoming-writing-skills in the default workspace", async () => {
     vi.spyOn(SkillsService, "getSkills").mockResolvedValue([]);
     const createSpy = vi
       .spyOn(AgentServerConversationService, "createConversation")
@@ -285,19 +271,14 @@ description: 这是一段很长的 YAML 描述，不应该出现在分享文案�
     await user.click(screen.getByTestId("create-skill-code-button"));
 
     await waitFor(() => expect(createSpy).toHaveBeenCalledTimes(1));
-    expect(prepareIsolatedSkillWorkspace).toHaveBeenCalledWith([
-      { skillName: "xiaoming-writing-skills" },
-    ]);
     expect(createSpy).toHaveBeenCalledWith(
       expect.objectContaining({
-        workingDirOverride: "/tmp/isolated-ws/xiaoming-writing-skills",
-        workspaceMode: "local_repo",
-        skillLoading: {
-          loadUserSkills: false,
-          loadProjectSkills: true,
-        },
+        initialUserMsg:
+          "/xiaoming-writing-skills\n\n请全程用简体中文与我交流。先问清楚我想做什么技能、触发方式和例子，等我确认方案后再写文件；不要一上来就创建。",
       }),
     );
+    expect(createSpy.mock.calls[0]?.[0]?.workingDirOverride).toBeUndefined();
+    expect(createSpy.mock.calls[0]?.[0]).not.toHaveProperty("skillLoading");
     await waitFor(() =>
       expect(navigate).toHaveBeenCalledWith("/conversations/conv-skill"),
     );
