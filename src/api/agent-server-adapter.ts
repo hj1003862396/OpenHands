@@ -821,11 +821,18 @@ function buildBundledSkills(): BundledSkill[] {
   });
 }
 
+/** Per-conversation overrides for which skill roots the agent-server loads. */
+export interface SkillLoadingOptions {
+  loadUserSkills?: boolean;
+  loadProjectSkills?: boolean;
+}
+
 function buildAgentContext(
   agentSettings: SettingsRecord,
   runtimeServicesInfo?: RuntimeServicesInfo | null,
   enablement: SkillEnablement = {},
   invokedCatalogSkill?: string,
+  skillLoading: SkillLoadingOptions = {},
 ): SettingsRecord {
   const runtimeServicesSuffix =
     buildRuntimeServicesSystemSuffix(runtimeServicesInfo);
@@ -856,6 +863,9 @@ function buildAgentContext(
     ),
   ];
 
+  const loadUserSkills = skillLoading.loadUserSkills ?? true;
+  const loadProjectSkills = skillLoading.loadProjectSkills ?? true;
+
   return {
     ...existingContext,
     // Public skills are bundled at build time from the @openhands/extensions
@@ -869,8 +879,8 @@ function buildAgentContext(
     // VITE_LOAD_PUBLIC_SKILLS=false to avoid clone delays no longer need it.
     skills: mergedSkills,
     load_public_skills: false,
-    load_user_skills: true,
-    load_project_skills: true,
+    load_user_skills: loadUserSkills,
+    load_project_skills: loadProjectSkills,
     // The backend also auto-loads user/project skills; the deny-list must
     // travel with the context so those skills are excluded from the system
     // prompt too. The allow-list has no counterpart to send: the backend
@@ -913,6 +923,7 @@ function buildConfiguredAcpAgentSettings(
   settings: Settings,
   runtimeServicesInfo?: RuntimeServicesInfo | null,
   query?: string,
+  skillLoading?: SkillLoadingOptions,
 ): AgentSettingsPayload {
   const agentSettings = toRecord(settings.agent_settings);
   const payload: AgentSettingsPayload = {
@@ -922,6 +933,7 @@ function buildConfiguredAcpAgentSettings(
       runtimeServicesInfo,
       toSkillEnablement(settings),
       findInvokedCatalogSkill(query),
+      skillLoading,
     ),
   };
 
@@ -981,6 +993,7 @@ function buildConfiguredOpenHandsAgentSettings(
   settings: Settings,
   runtimeServicesInfo?: RuntimeServicesInfo | null,
   query?: string,
+  skillLoading?: SkillLoadingOptions,
 ): AgentSettingsPayload {
   const agentSettings = toRecord(settings.agent_settings);
   const llm = buildNormalizedLlmSettings(agentSettings.llm);
@@ -1011,6 +1024,7 @@ function buildConfiguredOpenHandsAgentSettings(
       runtimeServicesInfo,
       toSkillEnablement(settings),
       findInvokedCatalogSkill(query),
+      skillLoading,
     ),
     tools: getAgentTools(agentSettings),
   };
@@ -1020,13 +1034,20 @@ function buildConfiguredAgentSettings(
   settings: Settings,
   runtimeServicesInfo?: RuntimeServicesInfo | null,
   query?: string,
+  skillLoading?: SkillLoadingOptions,
 ): AgentSettingsPayload {
   return isAcpAgent(settings)
-    ? buildConfiguredAcpAgentSettings(settings, runtimeServicesInfo, query)
+    ? buildConfiguredAcpAgentSettings(
+        settings,
+        runtimeServicesInfo,
+        query,
+        skillLoading,
+      )
     : buildConfiguredOpenHandsAgentSettings(
         settings,
         runtimeServicesInfo,
         query,
+        skillLoading,
       );
 }
 
@@ -1156,6 +1177,8 @@ export interface StartConversationOptions {
   titleLlmProfile?: string;
   runtimeServicesInfo?: RuntimeServicesInfo | null;
   workspaceHookConfig?: HookConfig | null;
+  /** Override auto-load of ~/.openhands/skills and project .agents/skills. */
+  skillLoading?: SkillLoadingOptions;
 }
 
 /**
@@ -1221,6 +1244,7 @@ export function buildStartConversationRequest(
     sourceAgentSettings,
     options.runtimeServicesInfo,
     options.query,
+    options.skillLoading,
   );
   const acpServerTag = acpMode
     ? getAcpServerTag(sourceAgentSettings)
@@ -1631,6 +1655,7 @@ export async function buildStartConversationRequestWithEncryptedSettings(options
   agentProfileId?: string;
   agentProfileKind?: AgentKind;
   titleLlmProfile?: string;
+  skillLoading?: SkillLoadingOptions;
 }): Promise<Record<string, unknown>> {
   const [{ SecretsService }, { default: HooksService }] = await Promise.all([
     import("./secrets-service"),

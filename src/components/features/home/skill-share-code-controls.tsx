@@ -11,12 +11,14 @@ import {
   TOAST_OPTIONS,
 } from "#/utils/custom-toast-handlers";
 import { markSkillSharePendingConversation } from "#/utils/skill-creator-events";
+import { prepareIsolatedSkillWorkspace } from "#/utils/prepare-isolated-skill-workspace";
 import { cn } from "#/utils/utils";
 import { formControlTransitionClassName } from "#/utils/form-control-classes";
 import { UseSkillCodeDialog } from "./use-skill-code-dialog";
 
-const SKILL_CREATOR_LAUNCH_QUERY =
-  "/skill-creator\n\n请全程用简体中文与我交流，并创建技能。";
+const WRITING_SKILLS_NAME = "xiaoming-writing-skills";
+
+const SKILL_CREATOR_LAUNCH_QUERY = `/${WRITING_SKILLS_NAME}\n\n请全程用简体中文与我交流。先问清楚我想做什么技能、触发方式和例子，等我确认方案后再写文件；不要一上来就创建。`;
 
 const pillButtonClassName = cn(
   "inline-flex flex-row items-center gap-1 rounded-full border border-transparent bg-transparent px-2 py-0.5",
@@ -26,9 +28,9 @@ const pillButtonClassName = cn(
 
 /**
  * Home-page controls for minting / redeeming 6-digit skill share codes.
- * 「创建技能码」 launches a conversation that invokes the built-in
- * skill-creator skill; codes are auto-minted when that flow scaffolds a
- * skill (see SkillShareCodeBanner). 「使用技能码」 opens a dialog that
+ * 「创建技能码」 launches a conversation that invokes
+ * xiaoming-writing-skills skill; after scaffolding, the chat banner lets you mint a
+ * code on click (see SkillShareCodeBanner). 「使用技能码」 opens a dialog that
  * redeems a code into a new chat that starts with /{skillName}.
  */
 export function SkillShareCodeControls({
@@ -47,18 +49,34 @@ export function SkillShareCodeControls({
   const handleCreateSkillCode = () => {
     if (isCreating) return;
 
-    const toastId = toast.loading("正在启动 skill-creator…", TOAST_OPTIONS);
+    const toastId = toast.loading(
+      "正在启动 xiaoming-writing-skills…",
+      TOAST_OPTIONS,
+    );
 
     void (async () => {
       try {
+        // Fresh workspace with only the writing-skills skill seeded — no
+        // sibling skills from other create sessions.
+        const isolated = await prepareIsolatedSkillWorkspace([
+          { skillName: WRITING_SKILLS_NAME },
+        ]);
         const data = await createConversation({
           query: SKILL_CREATOR_LAUNCH_QUERY,
+          workingDir: isolated.workspacePath,
+          workspaceMode: "local_repo",
+          skillLoading: {
+            // Prefer the seeded copy; fall back to user skills only when
+            // seeding failed so /xiaoming-writing-skills still resolves.
+            loadUserSkills: isolated.seededSkills.length === 0,
+            loadProjectSkills: true,
+          },
           entryPoint: "home_create_skill_code",
         });
         toast.dismiss(toastId);
         markSkillSharePendingConversation(data.conversation_id);
         displaySuccessToast(
-          "已启动 skill-creator。创建完成后会自动显示六位技能码。",
+          "已启动 xiaoming-writing-skills。确认技能无误后，点「生成技能码」获取六位码。",
         );
         navigate(`/conversations/${data.conversation_id}`);
       } catch (error) {

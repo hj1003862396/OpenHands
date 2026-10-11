@@ -46,6 +46,7 @@ import {
   getDefaultConversationTitle,
   toAppConversation,
   toConversationPage,
+  type SkillLoadingOptions,
 } from "../agent-server-adapter";
 import { GetVSCodeUrlResponse } from "../open-hands.types";
 import {
@@ -373,6 +374,8 @@ export interface CreateConversationOptions {
   // encrypted-settings builder; cloud sends it as a flat request field.
   agentProfileId?: string;
   agentProfileKind?: AgentKind;
+  /** Skill-code create/redeem: skip ~/.openhands/skills auto-load when set. */
+  skillLoading?: SkillLoadingOptions;
 }
 
 class AgentServerConversationService {
@@ -437,6 +440,7 @@ class AgentServerConversationService {
       sandboxId,
       agentProfileId,
       agentProfileKind,
+      skillLoading,
     } = options;
 
     if (getActiveBackend().backend.kind === "cloud") {
@@ -532,6 +536,7 @@ class AgentServerConversationService {
       agentProfileId,
       agentProfileKind,
       titleLlmProfile,
+      skillLoading,
     });
 
     const telemetryDistinctId = await getTelemetryDistinctId();

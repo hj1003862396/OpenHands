@@ -8,25 +8,33 @@ export interface SkillShareCodeBannerProps {
 }
 
 /**
- * Shown after skill-creator scaffolds a skill. Displays the auto-minted
- * 6-digit share code so the user can redeem it later from the home page.
+ * Shown after skill-creator scaffolds a skill. Lets the user mint a
+ * 6-digit share code on demand (never auto-minted mid-creation).
  */
 export function SkillShareCodeBanner({
   conversationId,
 }: SkillShareCodeBannerProps) {
-  const { items, dismissAll } = useSkillCreatorShareCodes(conversationId);
+  const { items, mintCode, mintingEventId, dismissAll } =
+    useSkillCreatorShareCodes(conversationId);
 
   if (items.length === 0) return null;
 
   const latest = items[items.length - 1];
+  const hasCode = latest.entry != null;
+  const isMinting = mintingEventId === latest.eventId;
 
   const handleCopy = async () => {
+    if (!latest.entry) return;
     try {
       await navigator.clipboard.writeText(latest.entry.code);
       displaySuccessToast(`技能码 ${latest.entry.code} 已复制`);
     } catch {
       displaySuccessToast(`技能码：${latest.entry.code}`);
     }
+  };
+
+  const handleMint = () => {
+    void mintCode(latest.eventId);
   };
 
   return (
@@ -37,28 +45,47 @@ export function SkillShareCodeBanner({
     >
       <div className="min-w-0 flex-1">
         <p className="text-sm font-medium text-[var(--oh-foreground)]">
-          技能「{latest.skillName}」已创建
+          技能「{latest.skillName}」已就绪
         </p>
-        <p className="mt-1 text-sm text-[var(--oh-foreground)]">
-          技能码：
-          <span
-            className="ml-2 inline-block rounded bg-black/40 px-2 py-0.5 font-mono text-lg font-semibold tracking-[0.35em] text-emerald-300"
-            data-testid="skill-share-code-value"
-          >
-            {latest.entry.code}
-          </span>
-        </p>
-        <p className="mt-1 text-xs text-[var(--oh-muted)]">
-          回到首页，在「使用技能码」中输入该六位数字即可挂上此技能开聊。
-        </p>
-        <button
-          type="button"
-          onClick={() => void handleCopy()}
-          className="mt-2 cursor-pointer rounded-md border border-emerald-500/50 bg-emerald-500/20 px-3 py-1.5 text-xs font-medium text-[var(--oh-foreground)] hover:bg-emerald-500/30"
-          data-testid="skill-share-code-copy"
-        >
-          复制技能码
-        </button>
+        {hasCode ? (
+          <>
+            <p className="mt-1 text-sm text-[var(--oh-foreground)]">
+              技能码：
+              <span
+                className="ml-2 inline-block rounded bg-black/40 px-2 py-0.5 font-mono text-lg font-semibold tracking-[0.35em] text-emerald-300"
+                data-testid="skill-share-code-value"
+              >
+                {latest.entry!.code}
+              </span>
+            </p>
+            <p className="mt-1 text-xs text-[var(--oh-muted)]">
+              回到首页，在「使用技能码」中输入该六位数字即可挂上此技能开聊。
+            </p>
+            <button
+              type="button"
+              onClick={() => void handleCopy()}
+              className="mt-2 cursor-pointer rounded-md border border-emerald-500/50 bg-emerald-500/20 px-3 py-1.5 text-xs font-medium text-[var(--oh-foreground)] hover:bg-emerald-500/30"
+              data-testid="skill-share-code-copy"
+            >
+              复制技能码
+            </button>
+          </>
+        ) : (
+          <>
+            <p className="mt-1 text-xs text-[var(--oh-muted)]">
+              确认技能内容无误后，点击下方按钮生成六位技能码。
+            </p>
+            <button
+              type="button"
+              onClick={handleMint}
+              disabled={isMinting}
+              className="mt-2 cursor-pointer rounded-md border border-emerald-500/50 bg-emerald-500/20 px-3 py-1.5 text-xs font-medium text-[var(--oh-foreground)] hover:bg-emerald-500/30 disabled:cursor-not-allowed disabled:opacity-50"
+              data-testid="skill-share-code-mint"
+            >
+              {isMinting ? "正在生成…" : "生成技能码"}
+            </button>
+          </>
+        )}
       </div>
       <button
         type="button"

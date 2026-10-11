@@ -48,6 +48,11 @@ export interface CreateConversationVariables {
   // launch from the user's selected profile (#3727).
   agentProfileId?: string;
   entryPoint?: string; // analytics only; not forwarded to the service
+  /** Skill-code create/redeem isolation: prefer loadUserSkills false. */
+  skillLoading?: {
+    loadUserSkills?: boolean;
+    loadProjectSkills?: boolean;
+  };
 }
 
 export const CREATE_CONVERSATION_MUTATION_KEY = ["create-conversation"];
@@ -90,6 +95,7 @@ export const useCreateConversation = () => {
         parentConversationId,
         agentType,
         agentProfileId,
+        skillLoading,
       } = variables;
 
       // The active AgentProfile is the default launch profile for new
@@ -233,6 +239,7 @@ export const useCreateConversation = () => {
           workspaceMode,
           parentConversationId,
           agentType,
+          skillLoading,
           ...(effectiveAgentProfileId
             ? {
                 agentProfileId: effectiveAgentProfileId,

@@ -13,7 +13,15 @@ import {
   writeSkillShareCodes,
   type SkillShareCodeEntry,
 } from "#/utils/skill-share-codes";
+import { prepareIsolatedSkillWorkspace } from "#/utils/prepare-isolated-skill-workspace";
 import { renderWithProviders } from "../../../../test-utils";
+
+vi.mock("#/utils/prepare-isolated-skill-workspace", () => ({
+  prepareIsolatedSkillWorkspace: vi.fn(async (sources: Array<{ skillName: string }>) => ({
+    workspacePath: `/tmp/isolated-ws/${sources[0]?.skillName ?? "skill"}`,
+    seededSkills: sources.map((s) => s.skillName),
+  })),
+}));
 
 function entry(
   code: string,
@@ -141,10 +149,18 @@ describe("SkillShareCodeControls", () => {
     await user.click(rows[0]);
 
     await waitFor(() => expect(createSpy).toHaveBeenCalledTimes(1));
+    expect(prepareIsolatedSkillWorkspace).toHaveBeenCalledWith([
+      expect.objectContaining({ skillName: "newer-skill" }),
+    ]);
     expect(createSpy).toHaveBeenCalledWith(
       expect.objectContaining({
         initialUserMsg: "/newer-skill\n\n请全程用简体中文与我交流。",
-        workingDirOverride: "/tmp/from-server",
+        workingDirOverride: "/tmp/isolated-ws/newer-skill",
+        workspaceMode: "local_repo",
+        skillLoading: {
+          loadUserSkills: false,
+          loadProjectSkills: true,
+        },
       }),
     );
     await waitFor(() =>
@@ -252,6 +268,39 @@ description: 这是一段很长的 YAML 描述，不应该出现在分享文案�
     });
     expect(share).toHaveTextContent("分享");
     expect(share).not.toHaveTextContent("已复制");
+  });
+
+  it("create-skill uses an isolated workspace seeded with writing-skills only", async () => {
+    vi.spyOn(SkillsService, "getSkills").mockResolvedValue([]);
+    const createSpy = vi
+      .spyOn(AgentServerConversationService, "createConversation")
+      .mockResolvedValue(makeConversationResponse());
+    const navigate = vi.fn();
+    const user = userEvent.setup();
+
+    renderWithProviders(<SkillShareCodeControls />, {
+      navigation: { navigate },
+    });
+
+    await user.click(screen.getByTestId("create-skill-code-button"));
+
+    await waitFor(() => expect(createSpy).toHaveBeenCalledTimes(1));
+    expect(prepareIsolatedSkillWorkspace).toHaveBeenCalledWith([
+      { skillName: "xiaoming-writing-skills" },
+    ]);
+    expect(createSpy).toHaveBeenCalledWith(
+      expect.objectContaining({
+        workingDirOverride: "/tmp/isolated-ws/xiaoming-writing-skills",
+        workspaceMode: "local_repo",
+        skillLoading: {
+          loadUserSkills: false,
+          loadProjectSkills: true,
+        },
+      }),
+    );
+    await waitFor(() =>
+      expect(navigate).toHaveBeenCalledWith("/conversations/conv-skill"),
+    );
   });
 
   it("falls back to the stored title when SKILL.md has no short heading", async () => {
