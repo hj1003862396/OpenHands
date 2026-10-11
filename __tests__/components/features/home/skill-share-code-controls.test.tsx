@@ -103,4 +103,36 @@ describe("SkillShareCodeControls", () => {
       expect(navigate).toHaveBeenCalledWith("/conversations/conv-skill"),
     );
   });
+
+  it("copies the SkillsDog share text from the row share button without redeeming", async () => {
+    vi.spyOn(SkillsService, "getSkills").mockResolvedValue([]);
+    writeSkillShareCodes({
+      "482913": entry("482913", "demo-skill", 1),
+    });
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    vi.spyOn(navigator.clipboard, "writeText").mockImplementation(writeText);
+    const createSpy = vi
+      .spyOn(AgentServerConversationService, "createConversation")
+      .mockResolvedValue(makeConversationResponse());
+    const successSpy = vi.spyOn(toast, "success");
+    const user = userEvent.setup();
+
+    renderWithProviders(<SkillShareCodeControls />);
+    await user.click(screen.getByTestId("use-skill-code-button"));
+
+    const share = screen.getByTestId("saved-skill-code-share");
+    expect(share).toHaveAttribute("aria-label", "分享");
+    expect(share).toHaveAttribute("title", "复制分享文案");
+
+    await user.click(share);
+
+    expect(writeText).toHaveBeenCalledWith(
+      "SkillsDog 技能码：482913 — https://skillsdog.com",
+    );
+    expect(createSpy).not.toHaveBeenCalled();
+    const toastContent = successSpy.mock.calls[0]?.[0] as {
+      props?: { children?: string };
+    };
+    expect(toastContent.props?.children).toBe("已复制");
+  });
 });

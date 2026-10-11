@@ -6,6 +6,7 @@ import { useIsCreatingConversation } from "#/hooks/use-is-creating-conversation"
 import { useNavigation } from "#/context/navigation-context";
 import {
   displayErrorToast,
+  displaySuccessToast,
   TOAST_OPTIONS,
 } from "#/utils/custom-toast-handlers";
 import {
@@ -26,6 +27,11 @@ function skillRedeemLaunchQuery(skillName: string): string {
   return `/${skillName}\n\n请全程用简体中文与我交流。`;
 }
 
+/** Short clipboard blurb shared from a saved skill-code row. */
+function skillShareClipboardText(code: string): string {
+  return `SkillsDog 技能码：${code} — https://skillsdog.com`;
+}
+
 function savedCodesNewestFirst(): SkillShareCodeEntry[] {
   return Object.values(readSkillShareCodes()).sort(
     (a, b) => b.createdAt - a.createdAt,
@@ -34,8 +40,9 @@ function savedCodesNewestFirst(): SkillShareCodeEntry[] {
 
 /**
  * Modal for redeeming a 6-digit skill share code. Lists locally saved codes
- * (newest first); choosing a row redeems immediately. 「使用」 redeems the
- * typed code. Both start a chat with /{skillName}.
+ * (newest first); choosing a row redeems immediately. The share control on
+ * the right copies a SkillsDog blurb and does not redeem. 「使用」 redeems
+ * the typed code. Both redeem paths start a chat with /{skillName}.
  */
 export function UseSkillCodeDialog({
   onClose,
@@ -87,6 +94,23 @@ export function UseSkillCodeDialog({
       } catch (error) {
         toast.dismiss(toastId);
         displayErrorToast(error instanceof Error ? error.message : null);
+      }
+    })();
+  };
+
+  const handleShareCode = (
+    event: React.MouseEvent<HTMLButtonElement>,
+    code: string,
+  ) => {
+    event.preventDefault();
+    event.stopPropagation();
+    const text = skillShareClipboardText(code);
+    void (async () => {
+      try {
+        await navigator.clipboard.writeText(text);
+        displaySuccessToast("已复制");
+      } catch {
+        displaySuccessToast(text);
       }
     })();
   };
@@ -153,13 +177,16 @@ export function UseSkillCodeDialog({
         ) : (
           <ul className="flex max-h-60 w-full flex-col gap-1 overflow-y-auto">
             {savedCodes.map((entry) => (
-              <li key={entry.code}>
+              <li
+                key={entry.code}
+                className="flex w-full items-center gap-1 rounded-lg hover:bg-[var(--oh-hover-wash)]"
+              >
                 <button
                   type="button"
                   data-testid="saved-skill-code-row"
                   data-code={entry.code}
                   onClick={() => handleRedeemCode(entry.code)}
-                  className="flex w-full cursor-pointer items-center justify-between gap-3 rounded-lg px-2 py-1.5 text-left text-sm hover:bg-[var(--oh-hover-wash)]"
+                  className="flex min-w-0 flex-1 cursor-pointer items-center justify-between gap-3 px-2 py-1.5 text-left text-sm"
                 >
                   <span className="font-mono tabular-nums text-[var(--oh-foreground)]">
                     {entry.code}
@@ -167,6 +194,17 @@ export function UseSkillCodeDialog({
                   <span className="truncate text-[var(--oh-text-secondary)]">
                     {entry.skillName}
                   </span>
+                </button>
+                <button
+                  type="button"
+                  data-testid="saved-skill-code-share"
+                  data-code={entry.code}
+                  aria-label="分享"
+                  title="复制分享文案"
+                  onClick={(event) => handleShareCode(event, entry.code)}
+                  className="shrink-0 cursor-pointer rounded-md px-2 py-1.5 text-xs font-medium text-[var(--oh-text-secondary)] hover:text-[var(--oh-foreground)]"
+                >
+                  分享
                 </button>
               </li>
             ))}
