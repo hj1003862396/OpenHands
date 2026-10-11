@@ -22,6 +22,84 @@ export interface SkillShareCodeEntry {
    */
   workspacePath: string | null;
   createdAt: number;
+  /**
+   * Short title for share copy: the first `#` heading in SKILL.md
+   * (for example `100 字短文体写作`). Absent on older saved codes.
+   */
+  skillTitle?: string | null;
+}
+
+/** How long the saved-code Share control shows「已复制」after a successful copy. */
+export const SKILL_SHARE_COPIED_FEEDBACK_MS = 1500;
+
+const SKILL_MARKDOWN_FRONTMATTER = /^---\r?\n[\s\S]*?\r?\n---\r?\n?/;
+
+export interface SkillShareTitleChoice {
+  title: string;
+  /** True when `title` came from a SKILL.md `#` heading, not a fallback. */
+  fromMarkdown: boolean;
+}
+
+/**
+ * First ATX H1 in a SKILL.md body. YAML `description` and `##` sections
+ * are ignored. Returns null when the file has no `# …` heading.
+ */
+export function extractSkillShortTitle(
+  markdown: string | null | undefined,
+): string | null {
+  if (!markdown) return null;
+  const body = markdown.replace(SKILL_MARKDOWN_FRONTMATTER, "");
+  let inFence = false;
+  for (const line of body.split(/\r?\n/)) {
+    const trimmed = line.trim();
+    if (/^(```|~~~)/.test(trimmed)) {
+      inFence = !inFence;
+      continue;
+    }
+    if (inFence) continue;
+    const match = trimmed.match(/^#\s+(.+)$/);
+    if (!match) continue;
+    const title = match[1]!.replace(/\s+#+\s*$/, "").trim();
+    if (title) return title;
+  }
+  return null;
+}
+
+/**
+ * Pick the share-card short title.
+ * Live `#` headings win; otherwise stored title, then the skills-API
+ * display name, then the English slash-command name.
+ */
+export function chooseSkillShareTitle(input: {
+  skillName: string;
+  storedTitle?: string | null;
+  markdown?: Array<string | null | undefined>;
+  apiDisplay?: string | null;
+}): SkillShareTitleChoice {
+  for (const source of input.markdown ?? []) {
+    const extracted = extractSkillShortTitle(source);
+    if (extracted) return { title: extracted, fromMarkdown: true };
+  }
+  const stored = input.storedTitle?.trim();
+  if (stored) return { title: stored, fromMarkdown: false };
+  const apiDisplay = input.apiDisplay?.trim();
+  if (apiDisplay) return { title: apiDisplay, fromMarkdown: false };
+  return { title: input.skillName, fromMarkdown: false };
+}
+
+/** Clipboard blurb shared from a saved skill-code row. */
+export function formatSkillShareClipboardText(
+  code: string,
+  title: string,
+): string {
+  return `SkillsDog 技能码：${code}（${title}） — https://skillsdog.com`;
+}
+
+/** Absolute SKILL.md path for a stored skill directory (or file path). */
+export function skillMarkdownPath(skillPath: string): string {
+  const normalized = skillPath.replace(/\\/g, "/").replace(/\/+$/, "");
+  if (/\/SKILL\.md$/i.test(normalized)) return normalized;
+  return `${normalized}/SKILL.md`;
 }
 
 export const SKILL_SHARE_CODES_STORAGE_KEY = "openhands-skill-share-codes";
@@ -115,13 +193,42 @@ export function lookupSkillShareCode(code: string): SkillShareCodeEntry | null {
   return readSkillShareCodes()[trimmed] ?? null;
 }
 
+function normalizeOptionalTitle(
+  value: string | null | undefined,
+): string | null {
+  const trimmed = value?.trim();
+  return trimmed ? trimmed : null;
+}
+
+/**
+ * Persist a resolved short title onto an existing code. No-op when the
+ * code is missing or the title is unchanged.
+ */
+export function rememberSkillShareTitle(
+  code: string,
+  skillTitle: string,
+): void {
+  const title = normalizeOptionalTitle(skillTitle);
+  const trimmedCode = code.trim();
+  if (!title || !isValidSkillShareCode(trimmedCode)) return;
+  const entries = readSkillShareCodes();
+  const entry = entries[trimmedCode];
+  if (!entry || entry.skillTitle === title) return;
+  writeSkillShareCodes({
+    ...entries,
+    [trimmedCode]: { ...entry, skillTitle: title },
+  });
+}
+
 /**
  * Mint (or return existing) a share code for a skill. Idempotent per
  * skillName+skillPath: re-minting the same skill returns the prior code.
+ * A later mint can fill in `skillTitle` when the first write didn't have one.
  */
 export function mintSkillShareCode(input: {
   skillName: string;
   skillPath?: string | null;
+  skillTitle?: string | null;
 }): SkillShareCodeEntry {
   const skillName = input.skillName.trim();
   if (!skillName) {
@@ -129,13 +236,21 @@ export function mintSkillShareCode(input: {
   }
   const skillPath = input.skillPath ? normalizePath(input.skillPath) : null;
   const workspacePath = deriveWorkspacePathFromSkillPath(skillPath);
+  const skillTitle = normalizeOptionalTitle(input.skillTitle);
 
   const existing = readSkillShareCodes();
   const prior = Object.values(existing).find(
     (entry) =>
       entry.skillName === skillName && (entry.skillPath ?? null) === skillPath,
   );
-  if (prior) return prior;
+  if (prior) {
+    if (skillTitle && prior.skillTitle !== skillTitle) {
+      const updated: SkillShareCodeEntry = { ...prior, skillTitle };
+      writeSkillShareCodes({ ...existing, [prior.code]: updated });
+      return updated;
+    }
+    return prior;
+  }
 
   const code = generateSixDigitCode(new Set(Object.keys(existing)));
   const entry: SkillShareCodeEntry = {
@@ -144,6 +259,7 @@ export function mintSkillShareCode(input: {
     skillPath,
     workspacePath,
     createdAt: Date.now(),
+    ...(skillTitle ? { skillTitle } : {}),
   };
   writeSkillShareCodes({ ...existing, [code]: entry });
   return entry;

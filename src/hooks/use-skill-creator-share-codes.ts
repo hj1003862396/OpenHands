@@ -1,15 +1,29 @@
 import { useCallback, useEffect, useMemo, useRef } from "react";
 import { useEventStore } from "#/stores/use-event-store";
 import { useSkillShareCodeBannerStore } from "#/stores/skill-share-code-banner-store";
+import { isObservationEvent } from "#/types/agent-server/type-guards";
+import type { OpenHandsEvent } from "#/types/agent-server/core";
 import {
   detectSkillCreatorInits,
   isSkillSharePendingConversation,
 } from "#/utils/skill-creator-events";
 import {
+  extractSkillShortTitle,
   mintSkillShareCode,
   type SkillShareCodeEntry,
 } from "#/utils/skill-share-codes";
 import { displaySuccessToast } from "#/utils/custom-toast-handlers";
+
+function skillTitleFromEvents(
+  events: OpenHandsEvent[],
+  eventId: string,
+): string | null {
+  const event = events.find((item) => item.id === eventId);
+  if (!event || !isObservationEvent(event)) return null;
+  const observation = event.observation as { new_content?: unknown };
+  if (typeof observation.new_content !== "string") return null;
+  return extractSkillShortTitle(observation.new_content);
+}
 
 export interface SkillCreatorShareCodeItem {
   eventId: string;
@@ -47,6 +61,7 @@ export const useSkillCreatorShareCodes = (
         entry: mintSkillShareCode({
           skillName: init.skillName,
           skillPath: init.skillPath,
+          skillTitle: skillTitleFromEvents(events, init.eventId),
         }),
       }));
   }, [

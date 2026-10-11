@@ -15,7 +15,8 @@ import {
 const TOAST_STYLE: CSSProperties = {
   background: "var(--oh-color-tertiary)",
   border: "1px solid var(--oh-border-input)",
-  color: "#fff",
+  // Light appearance paints tertiary as a light grey; #fff text disappears on it.
+  color: "var(--oh-foreground)",
   borderRadius: "var(--oh-radius)",
   maxWidth: "400px",
   wordBreak: "break-word",

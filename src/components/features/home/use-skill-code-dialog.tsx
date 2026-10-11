@@ -1,6 +1,7 @@
 /* eslint-disable i18next/no-literal-string -- skill-code UI: hardcoded zh-CN for now */
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import toast from "react-hot-toast";
+import { Check, Share2 } from "lucide-react";
 import { useCreateConversation } from "#/hooks/mutation/use-create-conversation";
 import { useIsCreatingConversation } from "#/hooks/use-is-creating-conversation";
 import { useNavigation } from "#/context/navigation-context";
@@ -10,11 +11,14 @@ import {
   TOAST_OPTIONS,
 } from "#/utils/custom-toast-handlers";
 import {
+  formatSkillShareClipboardText,
   isValidSkillShareCode,
   lookupSkillShareCode,
   readSkillShareCodes,
+  SKILL_SHARE_COPIED_FEEDBACK_MS,
   type SkillShareCodeEntry,
 } from "#/utils/skill-share-codes";
+import { resolveSkillShareShortTitle } from "#/utils/resolve-skill-share-title";
 import { cn } from "#/utils/utils";
 import { ModalBackdrop } from "#/components/shared/modals/modal-backdrop";
 import { ModalBody } from "#/components/shared/modals/modal-body";
@@ -27,11 +31,6 @@ function skillRedeemLaunchQuery(skillName: string): string {
   return `/${skillName}\n\n请全程用简体中文与我交流。`;
 }
 
-/** Short clipboard blurb shared from a saved skill-code row. */
-function skillShareClipboardText(code: string): string {
-  return `SkillsDog 技能码：${code} — https://skillsdog.com`;
-}
-
 function savedCodesNewestFirst(): SkillShareCodeEntry[] {
   return Object.values(readSkillShareCodes()).sort(
     (a, b) => b.createdAt - a.createdAt,
@@ -41,8 +40,9 @@ function savedCodesNewestFirst(): SkillShareCodeEntry[] {
 /**
  * Modal for redeeming a 6-digit skill share code. Lists locally saved codes
  * (newest first); choosing a row redeems immediately. The share control on
- * the right copies a SkillsDog blurb and does not redeem. 「使用」 redeems
- * the typed code. Both redeem paths start a chat with /{skillName}.
+ * the right copies a SkillsDog blurb (code + Chinese short title) and does
+ * not redeem. 「使用」 redeems the typed code. Both redeem paths start a
+ * chat with /{skillName}.
  */
 export function UseSkillCodeDialog({
   onClose,
@@ -59,6 +59,23 @@ export function UseSkillCodeDialog({
 
   const [codeInput, setCodeInput] = useState("");
   const [savedCodes] = useState(savedCodesNewestFirst);
+  const [copiedCode, setCopiedCode] = useState<string | null>(null);
+  const copiedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(
+    () => () => {
+      if (copiedTimerRef.current) clearTimeout(copiedTimerRef.current);
+    },
+    [],
+  );
+
+  const showCopiedFeedback = (code: string) => {
+    setCopiedCode(code);
+    if (copiedTimerRef.current) clearTimeout(copiedTimerRef.current);
+    copiedTimerRef.current = setTimeout(() => {
+      setCopiedCode((current) => (current === code ? null : current));
+    }, SKILL_SHARE_COPIED_FEEDBACK_MS);
+  };
 
   const handleRedeemCode = (rawCode?: string) => {
     if (isCreating) return;
@@ -100,15 +117,17 @@ export function UseSkillCodeDialog({
 
   const handleShareCode = (
     event: React.MouseEvent<HTMLButtonElement>,
-    code: string,
+    entry: SkillShareCodeEntry,
   ) => {
     event.preventDefault();
     event.stopPropagation();
-    const text = skillShareClipboardText(code);
     void (async () => {
+      const { title } = await resolveSkillShareShortTitle(entry);
+      const text = formatSkillShareClipboardText(entry.code, title);
       try {
         await navigator.clipboard.writeText(text);
         displaySuccessToast("已复制");
+        showCopiedFeedback(entry.code);
       } catch {
         displaySuccessToast(text);
       }
@@ -179,7 +198,7 @@ export function UseSkillCodeDialog({
             {savedCodes.map((entry) => (
               <li
                 key={entry.code}
-                className="flex w-full items-center gap-1 rounded-lg hover:bg-[var(--oh-hover-wash)]"
+                className="flex w-full items-center gap-2 rounded-lg pr-1.5 hover:bg-[var(--oh-hover-wash)]"
               >
                 <button
                   type="button"
@@ -195,16 +214,27 @@ export function UseSkillCodeDialog({
                     {entry.skillName}
                   </span>
                 </button>
+                <span
+                  aria-hidden
+                  data-testid="saved-skill-code-share-divider"
+                  className="h-4 w-px shrink-0 bg-[var(--oh-border)]"
+                />
                 <button
                   type="button"
                   data-testid="saved-skill-code-share"
                   data-code={entry.code}
-                  aria-label="分享"
+                  aria-label={copiedCode === entry.code ? "已复制" : "分享"}
                   title="复制分享文案"
-                  onClick={(event) => handleShareCode(event, entry.code)}
-                  className="shrink-0 cursor-pointer rounded-md px-2 py-1.5 text-xs font-medium text-[var(--oh-text-secondary)] hover:text-[var(--oh-foreground)]"
+                  onMouseDown={(event) => event.stopPropagation()}
+                  onClick={(event) => handleShareCode(event, entry)}
+                  className="inline-flex shrink-0 cursor-pointer items-center gap-1 rounded-md border border-[var(--oh-border)] bg-transparent px-2 py-1 text-xs font-medium text-[var(--oh-text-secondary)] hover:bg-[var(--oh-hover-wash)] hover:text-[var(--oh-foreground)]"
                 >
-                  分享
+                  {copiedCode === entry.code ? (
+                    <Check aria-hidden className="h-3 w-3" strokeWidth={2} />
+                  ) : (
+                    <Share2 aria-hidden className="h-3 w-3" strokeWidth={2} />
+                  )}
+                  {copiedCode === entry.code ? "已复制" : "分享"}
                 </button>
               </li>
             ))}
