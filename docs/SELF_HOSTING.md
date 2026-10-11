@@ -45,6 +45,13 @@ the agent server, and the automation backend, fronted by an ingress proxy on
 `127.0.0.1:8000` that routes by path. nginx only needs to know about that
 single ingress port.
 
+`/api/canvas/skill-share-codes` is handled by that ingress (and by
+static-server on the published binary and Docker image) before `/api/*`
+reaches the agent-server. Skill share codes need MySQL; see
+[skill-share-codes.md](./skill-share-codes.md). Without `MYSQL_URL` or
+`MYSQL_HOST` / `MYSQL_USER` / `MYSQL_DATABASE`, creating or redeeming a code
+returns 503.
+
 The `--public` flag enables **public mode**: the API key is _not_ baked into
 the frontend. Instead, users see an API key entry screen when they first load
 the UI and must paste the `LOCAL_BACKEND_API_KEY` to proceed.

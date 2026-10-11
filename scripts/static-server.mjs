@@ -41,6 +41,10 @@ import {
   matchesPathPrefix,
   proxyServerInfoRequest,
 } from "./proxy-utils.mjs";
+import {
+  matchSkillShareCodesRequest,
+  tryHandleSkillShareCodesRequest,
+} from "./skill-share-codes-api.mjs";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // SPA fallback helpers
@@ -655,6 +659,29 @@ export function startStaticServer(config) {
   const uninstallDiagnostics = proxy.installDiagnostics();
 
   const server = createServer((req, res) => {
+    // Canvas skill-share API. Must run before the /api proxy so codes
+    // are not forwarded to the agent-server. Match synchronously: http-proxy
+    // has to see the request in this turn or the body is already gone.
+    if (matchSkillShareCodesRequest(req)) {
+      void tryHandleSkillShareCodesRequest(req, res, {
+        sessionApiKey: config.sessionApiKey ?? null,
+      }).catch((error) => {
+        console.error("Skill share codes API error:", error);
+        if (!res.headersSent) {
+          res.writeHead(500, {
+            "Content-Type": "application/json; charset=utf-8",
+          });
+          res.end(
+            JSON.stringify({
+              error: "internal",
+              message: "Skill share codes API failed",
+            }),
+          );
+        }
+      });
+      return;
+    }
+
     const url = req.url ?? "/";
     const backend = route(url);
     if (backend) {

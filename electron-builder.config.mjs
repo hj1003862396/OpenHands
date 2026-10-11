@@ -64,12 +64,13 @@ import { fileURLToPath } from "node:url";
 // npm packages the packaged app's child-process scripts import at runtime:
 //   scripts/static-server.mjs  → sirv
 //   scripts/proxy-utils.mjs    → httpxy   (imported by ingress.mjs)
+//   scripts/skill-share-codes-api.mjs → mysql2 (imported by both servers)
 // Their dependency closure is copied back into Resources/app/node_modules
 // after the strip below. If a spawned script gains a new bare import, add
 // the package here — a missing one crashes that service in the installed
 // app with ERR_MODULE_NOT_FOUND (invisible under Finder, where stdout goes
 // to /dev/null) and the splash times out waiting for port 8000.
-const RUNTIME_PACKAGES = ["sirv", "httpxy"];
+const RUNTIME_PACKAGES = ["sirv", "httpxy", "mysql2"];
 
 const repoRoot = dirname(fileURLToPath(import.meta.url));
 

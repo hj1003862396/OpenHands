@@ -14,6 +14,10 @@ import {
   AGENT_SERVER_UI_SCOPE_SELECTOR,
   transformAgentServerUISelector,
 } from "./src/styles/agent-server-ui-style-scope";
+import {
+  matchSkillShareCodesRequest,
+  tryHandleSkillShareCodesRequest,
+} from "./scripts/skill-share-codes-api.mjs";
 
 const LIB_ENTRY = fileURLToPath(new URL("./src/index.ts", import.meta.url));
 const LIB_EXTERNALS = [
@@ -127,6 +131,34 @@ export default defineConfig(({ mode }) => {
       ),
     },
     plugins: [
+      {
+        name: "skill-share-codes-api",
+        apply: "serve",
+        configureServer(server) {
+          server.middlewares.use((req, res, next) => {
+            if (!matchSkillShareCodesRequest(req)) {
+              next();
+              return;
+            }
+            void tryHandleSkillShareCodesRequest(req, res, {
+              sessionApiKey: process.env.VITE_SESSION_API_KEY ?? null,
+            }).catch((error: unknown) => {
+              console.error("Skill share codes API error:", error);
+              if (!res.headersSent) {
+                res.writeHead(500, {
+                  "Content-Type": "application/json; charset=utf-8",
+                });
+                res.end(
+                  JSON.stringify({
+                    error: "internal",
+                    message: "Skill share codes API failed",
+                  }),
+                );
+              }
+            });
+          });
+        },
+      },
       {
         name: "suppress-chrome-devtools-well-known",
         apply: "serve",

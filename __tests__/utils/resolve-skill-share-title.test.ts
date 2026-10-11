@@ -1,15 +1,34 @@
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { SkillInfo } from "#/types/settings";
 import { resolveSkillShareShortTitle } from "#/utils/resolve-skill-share-title";
 import {
   SKILL_SHARE_CODES_STORAGE_KEY,
-  lookupSkillShareCode,
+  readSkillShareCodes,
   writeSkillShareCodes,
   type SkillShareCodeEntry,
 } from "#/utils/skill-share-codes";
 
+beforeEach(() => {
+  vi.stubGlobal(
+    "fetch",
+    vi.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () => ({
+        code: "482913",
+        skillName: "short-form",
+        skillPath: "/tmp/ws/.agents/skills/short-form",
+        workspacePath: "/tmp/ws",
+        skillTitle: "100 字短文体写作",
+        createdAt: 1,
+      }),
+    }),
+  );
+});
+
 afterEach(() => {
   window.localStorage.removeItem(SKILL_SHARE_CODES_STORAGE_KEY);
+  vi.unstubAllGlobals();
 });
 
 function entry(
@@ -56,7 +75,7 @@ describe("resolveSkillShareShortTitle", () => {
       fromMarkdown: true,
     });
     expect(readSkillMarkdown).not.toHaveBeenCalled();
-    expect(lookupSkillShareCode(saved.code)?.skillTitle).toBe(
+    expect(readSkillShareCodes()[saved.code]?.skillTitle).toBe(
       "100 字短文体写作",
     );
   });

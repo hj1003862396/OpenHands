@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   SKILL_SHARE_CODES_STORAGE_KEY,
   chooseSkillShareTitle,
@@ -7,14 +7,27 @@ import {
   formatSkillShareClipboardText,
   generateSixDigitCode,
   isValidSkillShareCode,
+  lookupCachedSkillShareCode,
   lookupSkillShareCode,
   mintSkillShareCode,
   readSkillShareCodes,
+  skillShareUserErrorMessage,
   writeSkillShareCodes,
 } from "#/utils/skill-share-codes";
+import { SkillShareApiError } from "#/api/skill-share-codes-client";
+
+function jsonResponse(status: number, body: unknown): Response {
+  return {
+    ok: status >= 200 && status < 300,
+    status,
+    statusText: "",
+    json: async () => body,
+  } as Response;
+}
 
 afterEach(() => {
   window.localStorage.removeItem(SKILL_SHARE_CODES_STORAGE_KEY);
+  vi.unstubAllGlobals();
 });
 
 describe("skill-share-codes", () => {
@@ -46,34 +59,88 @@ describe("skill-share-codes", () => {
     expect(deriveWorkspacePathFromSkillPath(null)).toBeNull();
   });
 
-  it("mints, persists, and looks up a share code", () => {
-    const entry = mintSkillShareCode({
+  it("mints through the server and caches the returned code", async () => {
+    const minted = {
+      code: "482913",
+      skillName: "my-skill",
+      skillPath: "/tmp/ws/.agents/skills/my-skill",
+      workspacePath: "/tmp/ws",
+      skillTitle: null,
+      createdAt: 10,
+    };
+    const titled = { ...minted, skillTitle: "100 字短文体写作" };
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(jsonResponse(200, minted))
+      .mockResolvedValueOnce(jsonResponse(200, titled))
+      .mockResolvedValueOnce(jsonResponse(200, titled));
+    vi.stubGlobal("fetch", fetchMock);
+
+    const entry = await mintSkillShareCode({
       skillName: "my-skill",
       skillPath: "/tmp/ws/.agents/skills/my-skill",
     });
-    expect(entry.code).toMatch(/^\d{6}$/);
+    expect(entry.code).toBe("482913");
     expect(entry.skillName).toBe("my-skill");
     expect(entry.workspacePath).toBe("/tmp/ws");
-    expect(lookupSkillShareCode(entry.code)?.skillName).toBe("my-skill");
     expect(Object.keys(readSkillShareCodes())).toEqual([entry.code]);
+    expect(fetchMock).toHaveBeenCalledWith(
+      "/api/canvas/skill-share-codes",
+      expect.objectContaining({ method: "POST" }),
+    );
 
-    // Idempotent for same skill+path
-    const again = mintSkillShareCode({
-      skillName: "my-skill",
-      skillPath: "/tmp/ws/.agents/skills/my-skill",
-    });
-    expect(again.code).toBe(entry.code);
-
-    const titled = mintSkillShareCode({
+    const again = await mintSkillShareCode({
       skillName: "my-skill",
       skillPath: "/tmp/ws/.agents/skills/my-skill",
       skillTitle: "100 字短文体写作",
     });
-    expect(titled.code).toBe(entry.code);
-    expect(titled.skillTitle).toBe("100 字短文体写作");
-    expect(lookupSkillShareCode(entry.code)?.skillTitle).toBe(
+    expect(again.code).toBe(entry.code);
+    expect(again.skillTitle).toBe("100 字短文体写作");
+    expect(readSkillShareCodes()[entry.code]?.skillTitle).toBe(
       "100 字短文体写作",
     );
+
+    await expect(lookupSkillShareCode(entry.code)).resolves.toMatchObject({
+      skillName: "my-skill",
+      skillTitle: "100 字短文体写作",
+    });
+    expect(fetchMock).toHaveBeenCalledWith(
+      "/api/canvas/skill-share-codes/482913",
+      expect.objectContaining({ method: "GET" }),
+    );
+  });
+
+  it("does not redeem a code that exists only in localStorage", async () => {
+    writeSkillShareCodes({
+      "999999": {
+        code: "999999",
+        skillName: "local-only",
+        skillPath: null,
+        workspacePath: null,
+        createdAt: 1,
+      },
+    });
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(
+        jsonResponse(404, {
+          error: "not_found",
+          message: "Unknown skill share code",
+        }),
+      ),
+    );
+
+    await expect(lookupSkillShareCode("999999")).resolves.toBeNull();
+    expect(lookupCachedSkillShareCode("999999")?.skillName).toBe("local-only");
+  });
+
+  it("surfaces a MySQL configuration failure instead of the local cache", () => {
+    expect(
+      skillShareUserErrorMessage(
+        new SkillShareApiError(503, "mysql_unconfigured", "missing"),
+        "redeem",
+      ),
+    ).toBe("技能码服务未配置 MySQL，无法兑换");
   });
 
   it("extracts the first H1 and ignores YAML description and deeper headings", () => {
@@ -115,8 +182,8 @@ description: |
     );
   });
 
-  it("returns null for unknown codes", () => {
+  it("returns null for unknown cached codes", () => {
     writeSkillShareCodes({});
-    expect(lookupSkillShareCode("999999")).toBeNull();
+    expect(lookupCachedSkillShareCode("999999")).toBeNull();
   });
 });

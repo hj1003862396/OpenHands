@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useEventStore } from "#/stores/use-event-store";
 import { useSkillShareCodeBannerStore } from "#/stores/skill-share-code-banner-store";
 import { isObservationEvent } from "#/types/agent-server/type-guards";
@@ -10,9 +10,13 @@ import {
 import {
   extractSkillShortTitle,
   mintSkillShareCode,
+  skillShareUserErrorMessage,
   type SkillShareCodeEntry,
 } from "#/utils/skill-share-codes";
-import { displaySuccessToast } from "#/utils/custom-toast-handlers";
+import {
+  displayErrorToast,
+  displaySuccessToast,
+} from "#/utils/custom-toast-handlers";
 
 function skillTitleFromEvents(
   events: OpenHandsEvent[],
@@ -32,10 +36,18 @@ export interface SkillCreatorShareCodeItem {
   entry: SkillShareCodeEntry;
 }
 
+interface PendingSkillShareMint {
+  eventId: string;
+  skillName: string;
+  skillPath: string;
+  skillTitle: string | null;
+}
+
 /**
  * Auto-mint share codes when skill-creator finishes scaffolding a skill in
- * this conversation. Codes are persisted in localStorage via mintSkillShareCode.
- * Also toasts the code once so it is visible even if the banner is scrolled off.
+ * this conversation. Codes are written to the Canvas skill-share API
+ * (MySQL). Also toasts the code once so it is visible even if the banner
+ * is scrolled off.
  */
 export const useSkillCreatorShareCodes = (
   conversationId: string | null | undefined,
@@ -47,10 +59,13 @@ export const useSkillCreatorShareCodes = (
   );
   const dismiss = useSkillShareCodeBannerStore((s) => s.dismiss);
   const toastedCodesRef = useRef<Set<string>>(new Set());
+  const [entriesByEventId, setEntriesByEventId] = useState<
+    Record<string, SkillShareCodeEntry>
+  >({});
 
   const allowAnySkillMd = isSkillSharePendingConversation(conversationId);
 
-  const items = useMemo<SkillCreatorShareCodeItem[]>(() => {
+  const detected = useMemo<PendingSkillShareMint[]>(() => {
     if (!conversationId || conversationId !== loadedConversationId) return [];
     return detectSkillCreatorInits(events, { allowAnySkillMd })
       .filter((init) => !dismissedEventIds[init.eventId])
@@ -58,11 +73,7 @@ export const useSkillCreatorShareCodes = (
         eventId: init.eventId,
         skillName: init.skillName,
         skillPath: init.skillPath,
-        entry: mintSkillShareCode({
-          skillName: init.skillName,
-          skillPath: init.skillPath,
-          skillTitle: skillTitleFromEvents(events, init.eventId),
-        }),
+        skillTitle: skillTitleFromEvents(events, init.eventId),
       }));
   }, [
     conversationId,
@@ -71,6 +82,50 @@ export const useSkillCreatorShareCodes = (
     dismissedEventIds,
     allowAnySkillMd,
   ]);
+
+  useEffect(() => {
+    let cancelled = false;
+    for (const init of detected) {
+      if (entriesByEventId[init.eventId]) continue;
+      void mintSkillShareCode({
+        skillName: init.skillName,
+        skillPath: init.skillPath,
+        skillTitle: init.skillTitle,
+      })
+        .then((entry) => {
+          if (cancelled) return;
+          setEntriesByEventId((current) =>
+            current[init.eventId]
+              ? current
+              : { ...current, [init.eventId]: entry },
+          );
+        })
+        .catch((error: unknown) => {
+          if (cancelled) return;
+          displayErrorToast(skillShareUserErrorMessage(error, "mint"));
+        });
+    }
+    return () => {
+      cancelled = true;
+    };
+  }, [detected, entriesByEventId]);
+
+  const items = useMemo<SkillCreatorShareCodeItem[]>(
+    () =>
+      detected.flatMap((init) => {
+        const entry = entriesByEventId[init.eventId];
+        if (!entry) return [];
+        return [
+          {
+            eventId: init.eventId,
+            skillName: init.skillName,
+            skillPath: init.skillPath,
+            entry,
+          },
+        ];
+      }),
+    [detected, entriesByEventId],
+  );
 
   useEffect(() => {
     for (const item of items) {

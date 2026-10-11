@@ -46,6 +46,11 @@ ENV VITE_POSTHOG_API_KEY=${VITE_POSTHOG_API_KEY}
 ENV VITE_BASE_PATH=${VITE_BASE_PATH}
 RUN npm run build
 
+# mysql2 closure for the skill-share API. Copy only that closure into the
+# final image so we do not ship the whole frontend node_modules tree.
+RUN node scripts/copy-runtime-node-modules.mjs \
+      node_modules /tmp/skill-share-node-modules mysql2
+
 # ── Stage 1b: Generate shell-sourceable defaults from config/defaults.json ──
 # This avoids needing jq/python at container runtime to parse the JSON.
 FROM node:24-slim AS config-gen
@@ -123,6 +128,9 @@ COPY --from=frontend-build /build/build /opt/agent-canvas/frontend
 # Copy the static-server scripts and their production runtime deps.
 COPY scripts/static-server.mjs /opt/agent-canvas/static-server.mjs
 COPY scripts/proxy-utils.mjs /opt/agent-canvas/proxy-utils.mjs
+COPY scripts/skill-share-codes-api.mjs /opt/agent-canvas/skill-share-codes-api.mjs
+COPY scripts/skill-share-codes-schema.sql /opt/agent-canvas/skill-share-codes-schema.sql
+COPY --from=frontend-build /tmp/skill-share-node-modules/ /opt/agent-canvas/node_modules/
 COPY --from=frontend-build /build/node_modules/httpxy /opt/agent-canvas/node_modules/httpxy
 COPY --from=frontend-build /build/node_modules/sirv /opt/agent-canvas/node_modules/sirv
 COPY --from=frontend-build /build/node_modules/@polka /opt/agent-canvas/node_modules/@polka
