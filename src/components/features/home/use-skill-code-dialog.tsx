@@ -16,6 +16,7 @@ import {
   lookupSkillShareCode,
   readSkillShareCodes,
   SKILL_SHARE_COPIED_FEEDBACK_MS,
+  skillShareUserErrorMessage,
   type SkillShareCodeEntry,
 } from "#/utils/skill-share-codes";
 import { resolveSkillShareShortTitle } from "#/utils/resolve-skill-share-title";
@@ -38,11 +39,10 @@ function savedCodesNewestFirst(): SkillShareCodeEntry[] {
 }
 
 /**
- * Modal for redeeming a 6-digit skill share code. Lists locally saved codes
- * (newest first); choosing a row redeems immediately. The share control on
- * the right copies a SkillsDog blurb (code + Chinese short title) and does
- * not redeem. 「使用」 redeems the typed code. Both redeem paths start a
- * chat with /{skillName}.
+ * Modal for redeeming a 6-digit skill share code. Lists codes this browser
+ * has cached (newest first). Choosing a row or pressing 「使用」 looks the
+ * code up on the server, then starts a chat with /{skillName}. The share
+ * control copies a SkillsDog blurb and does not redeem.
  */
 export function UseSkillCodeDialog({
   onClose,
@@ -84,20 +84,30 @@ export function UseSkillCodeDialog({
       displayErrorToast("请输入六位数字技能码");
       return;
     }
-    const entry = lookupSkillShareCode(trimmed);
-    if (!entry) {
-      displayErrorToast("未找到该技能码，请确认后重试");
-      return;
-    }
 
     setCodeInput(trimmed);
-
-    const toastId = toast.loading(
-      `正在使用技能「${entry.skillName}」开聊…`,
-      TOAST_OPTIONS,
-    );
+    const toastId = toast.loading("正在查询技能码…", TOAST_OPTIONS);
 
     void (async () => {
+      let entry: SkillShareCodeEntry | null;
+      try {
+        entry = await lookupSkillShareCode(trimmed);
+      } catch (error) {
+        toast.dismiss(toastId);
+        displayErrorToast(skillShareUserErrorMessage(error, "redeem"));
+        return;
+      }
+      if (!entry) {
+        toast.dismiss(toastId);
+        displayErrorToast("未找到该技能码，请确认后重试");
+        return;
+      }
+
+      toast.loading(`正在使用技能「${entry.skillName}」开聊…`, {
+        ...TOAST_OPTIONS,
+        id: toastId,
+      });
+
       try {
         const data = await createConversation({
           query: skillRedeemLaunchQuery(entry.skillName),

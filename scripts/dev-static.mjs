@@ -470,6 +470,9 @@ function startIngress(config) {
       config.ingressPort.toString(),
       "--runtime-services-info",
       runtimeServicesInfo,
+      ...(config.sessionApiKey
+        ? ["--session-api-key", config.sessionApiKey]
+        : []),
       ...buildLocalServiceRouteArgs(config),
       ...getNoReferrerPrefixArgs(config),
       "--default",

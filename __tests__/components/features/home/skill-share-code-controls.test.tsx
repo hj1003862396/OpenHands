@@ -9,7 +9,7 @@ import type { SkillInfo } from "#/types/settings";
 import {
   SKILL_SHARE_CODES_STORAGE_KEY,
   SKILL_SHARE_COPIED_FEEDBACK_MS,
-  lookupSkillShareCode,
+  readSkillShareCodes,
   writeSkillShareCodes,
   type SkillShareCodeEntry,
 } from "#/utils/skill-share-codes";
@@ -64,6 +64,7 @@ describe("SkillShareCodeControls", () => {
     window.localStorage.removeItem(SKILL_SHARE_CODES_STORAGE_KEY);
     toast.remove();
     vi.restoreAllMocks();
+    vi.unstubAllGlobals();
   });
 
   it("opens a redeem dialog from 使用技能码 with empty saved list", async () => {
@@ -91,6 +92,33 @@ describe("SkillShareCodeControls", () => {
       "111111": entry("111111", "older-skill", 1),
       "222222": entry("222222", "newer-skill", 2),
     });
+    const realFetch = globalThis.fetch.bind(globalThis);
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+        const url =
+          typeof input === "string"
+            ? input
+            : input instanceof URL
+              ? input.href
+              : input.url;
+        if (!url.includes("/api/canvas/skill-share-codes")) {
+          return realFetch(input, init);
+        }
+        return {
+          ok: true,
+          status: 200,
+          json: async () => ({
+            code: "222222",
+            skillName: "newer-skill",
+            skillPath: null,
+            workspacePath: "/tmp/from-server",
+            skillTitle: null,
+            createdAt: 2,
+          }),
+        } as Response;
+      }),
+    );
     const createSpy = vi
       .spyOn(AgentServerConversationService, "createConversation")
       .mockResolvedValue(makeConversationResponse());
@@ -116,6 +144,7 @@ describe("SkillShareCodeControls", () => {
     expect(createSpy).toHaveBeenCalledWith(
       expect.objectContaining({
         initialUserMsg: "/newer-skill\n\n请全程用简体中文与我交流。",
+        workingDirOverride: "/tmp/from-server",
       }),
     );
     await waitFor(() =>
@@ -145,6 +174,21 @@ description: 这是一段很长的 YAML 描述，不应该出现在分享文案�
     });
     const writeText = vi.fn().mockResolvedValue(undefined);
     vi.spyOn(navigator.clipboard, "writeText").mockImplementation(writeText);
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        ok: true,
+        status: 200,
+        json: async () => ({
+          code: "482913",
+          skillName: "demo-skill",
+          skillPath: "/tmp/ws/.agents/skills/demo-skill",
+          workspacePath: "/tmp/ws",
+          skillTitle: "100 字短文体写作",
+          createdAt: 1,
+        }),
+      }),
+    );
     const createSpy = vi
       .spyOn(AgentServerConversationService, "createConversation")
       .mockResolvedValue(makeConversationResponse());
@@ -196,7 +240,9 @@ description: 这是一段很长的 YAML 描述，不应该出现在分享文案�
     expect(toastContent.props?.children).toBe("已复制");
     expect(share).toHaveTextContent("已复制");
     expect(share).toHaveAttribute("aria-label", "已复制");
-    expect(lookupSkillShareCode("482913")?.skillTitle).toBe("100 字短文体写作");
+    expect(readSkillShareCodes()["482913"]?.skillTitle).toBe(
+      "100 字短文体写作",
+    );
 
     await act(async () => {
       const pending = scheduled.find(

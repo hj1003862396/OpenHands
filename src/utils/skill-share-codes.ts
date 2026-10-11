@@ -1,10 +1,19 @@
 /**
- * Client-side 6-digit skill share codes.
+ * 6-digit skill share codes.
  *
- * Maps a numeric code → skill coordinates so a home-page redeem can start a
- * conversation that invokes that skill. Persistence is localStorage only —
- * there is no server share API yet.
+ * MySQL (via the Canvas `/api/canvas/skill-share-codes` route) is the source
+ * of truth for mint and redeem, so a code created on one computer works on
+ * another. localStorage only caches codes this browser has already seen,
+ * for the saved-code list and share copy. Redeem does not accept that cache
+ * when the server does not know the code.
  */
+
+import {
+  SkillShareApiError,
+  lookupSkillShareCodeOnServer,
+  mintSkillShareCodeOnServer,
+  updateSkillShareTitleOnServer,
+} from "#/api/skill-share-codes-client";
 
 export interface SkillShareCodeEntry {
   /** Six-digit numeric string, e.g. "482913". */
@@ -187,10 +196,65 @@ export function writeSkillShareCodes(
   }
 }
 
-export function lookupSkillShareCode(code: string): SkillShareCodeEntry | null {
+/** Codes this browser has cached. Not sufficient to redeem. */
+export function lookupCachedSkillShareCode(
+  code: string,
+): SkillShareCodeEntry | null {
   const trimmed = code.trim();
   if (!isValidSkillShareCode(trimmed)) return null;
   return readSkillShareCodes()[trimmed] ?? null;
+}
+
+export function cacheSkillShareCode(entry: SkillShareCodeEntry): void {
+  const existing = readSkillShareCodes();
+  writeSkillShareCodes({ ...existing, [entry.code]: entry });
+}
+
+/**
+ * Redeem lookup. Always asks the server. A 404 is "unknown code" (null).
+ * Any other failure is thrown so the UI does not pretend the local cache
+ * is enough. A successful lookup is written into the local cache.
+ */
+export async function lookupSkillShareCode(
+  code: string,
+): Promise<SkillShareCodeEntry | null> {
+  const trimmed = code.trim();
+  if (!isValidSkillShareCode(trimmed)) return null;
+  try {
+    const entry = await lookupSkillShareCodeOnServer(trimmed);
+    cacheSkillShareCode(entry);
+    return entry;
+  } catch (error) {
+    if (error instanceof SkillShareApiError && error.status === 404) {
+      return null;
+    }
+    throw error;
+  }
+}
+
+export function skillShareUserErrorMessage(
+  error: unknown,
+  intent: "mint" | "redeem",
+): string {
+  if (error instanceof SkillShareApiError) {
+    if (
+      error.code === "mysql_unconfigured" ||
+      error.code === "mysql_unavailable"
+    ) {
+      return intent === "mint"
+        ? "技能码服务未配置 MySQL，无法创建技能码"
+        : "技能码服务未配置 MySQL，无法兑换";
+    }
+    if (error.status === 404 || error.code === "not_found") {
+      return "未找到该技能码，请确认后重试";
+    }
+    if (error.status === 401 || error.code === "unauthorized") {
+      return "技能码服务拒绝了当前会话密钥";
+    }
+  }
+  return intent === "mint"
+    ? "无法连接技能码服务，技能码未生成"
+    : "无法连接技能码服务，请稍后重试";
 }
 
 function normalizeOptionalTitle(
@@ -218,50 +282,28 @@ export function rememberSkillShareTitle(
     ...entries,
     [trimmedCode]: { ...entry, skillTitle: title },
   });
+  void updateSkillShareTitleOnServer(trimmedCode, title)
+    .then((updated) => {
+      cacheSkillShareCode(updated);
+    })
+    .catch(() => {
+      // The local title still drives this browser's share copy.
+    });
 }
 
 /**
  * Mint (or return existing) a share code for a skill. Idempotent per
- * skillName+skillPath: re-minting the same skill returns the prior code.
- * A later mint can fill in `skillTitle` when the first write didn't have one.
+ * skillName+skillPath on the server: re-minting the same skill returns the
+ * prior code. A later mint can fill in `skillTitle` when the first write
+ * didn't have one. The returned code is cached locally for the saved list.
  */
-export function mintSkillShareCode(input: {
+export async function mintSkillShareCode(input: {
   skillName: string;
   skillPath?: string | null;
   skillTitle?: string | null;
-}): SkillShareCodeEntry {
-  const skillName = input.skillName.trim();
-  if (!skillName) {
-    throw new Error("skillName is required");
-  }
-  const skillPath = input.skillPath ? normalizePath(input.skillPath) : null;
-  const workspacePath = deriveWorkspacePathFromSkillPath(skillPath);
-  const skillTitle = normalizeOptionalTitle(input.skillTitle);
-
-  const existing = readSkillShareCodes();
-  const prior = Object.values(existing).find(
-    (entry) =>
-      entry.skillName === skillName && (entry.skillPath ?? null) === skillPath,
-  );
-  if (prior) {
-    if (skillTitle && prior.skillTitle !== skillTitle) {
-      const updated: SkillShareCodeEntry = { ...prior, skillTitle };
-      writeSkillShareCodes({ ...existing, [prior.code]: updated });
-      return updated;
-    }
-    return prior;
-  }
-
-  const code = generateSixDigitCode(new Set(Object.keys(existing)));
-  const entry: SkillShareCodeEntry = {
-    code,
-    skillName,
-    skillPath,
-    workspacePath,
-    createdAt: Date.now(),
-    ...(skillTitle ? { skillTitle } : {}),
-  };
-  writeSkillShareCodes({ ...existing, [code]: entry });
+}): Promise<SkillShareCodeEntry> {
+  const entry = await mintSkillShareCodeOnServer(input);
+  cacheSkillShareCode(entry);
   return entry;
 }
 

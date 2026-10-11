@@ -33,6 +33,10 @@ import {
   matchesPathPrefix,
   proxyServerInfoRequest,
 } from "./proxy-utils.mjs";
+import {
+  matchSkillShareCodesRequest,
+  tryHandleSkillShareCodesRequest,
+} from "./skill-share-codes-api.mjs";
 
 // ═══════════════════════════════════════════════════════════════════════════
 // Configuration
@@ -46,6 +50,7 @@ function parseArgs() {
     defaultBackend: null,
     noReferrerPrefixes: [],
     runtimeServicesInfo: null,
+    sessionApiKey: null,
   };
 
   for (let i = 0; i < args.length; i++) {
@@ -77,6 +82,9 @@ function parseArgs() {
       case "--runtime-services-info":
         config.runtimeServicesInfo = args[++i] || null;
         break;
+      case "--session-api-key":
+        config.sessionApiKey = args[++i] || null;
+        break;
       case "-h":
       case "--help":
         showHelp();
@@ -104,6 +112,8 @@ OPTIONS:
                               responses under <p>. For upstreams whose URL
                               carries a credential in the query string.
   --runtime-services-info     Runtime services JSON for /server_info
+  --session-api-key <key>     Session key required by the skill-share API
+                              when the process env does not already carry it
   -h, --help                  Show this help
 
 ENVIRONMENT VARIABLES:
@@ -154,6 +164,7 @@ function buildConfig(args, env = process.env) {
     noReferrerPrefixes: args.noReferrerPrefixes ?? [],
     runtimeServicesInfo:
       args.runtimeServicesInfo || env.INGRESS_RUNTIME_SERVICES_INFO || null,
+    sessionApiKey: args.sessionApiKey || null,
   };
 }
 
@@ -169,6 +180,29 @@ export function startIngress(config) {
   const noReferrerPrefixes = config.noReferrerPrefixes ?? [];
 
   const server = createServer((req, res) => {
+    // Skill share codes are a Canvas API, not an agent-server route.
+    // Match synchronously so every other request still reaches http-proxy
+    // in this turn. Awaiting first drops the request body on the floor.
+    if (matchSkillShareCodesRequest(req)) {
+      void tryHandleSkillShareCodesRequest(req, res, {
+        sessionApiKey: config.sessionApiKey ?? null,
+      }).catch((error) => {
+        console.error("Skill share codes API error:", error);
+        if (!res.headersSent) {
+          res.writeHead(500, {
+            "Content-Type": "application/json; charset=utf-8",
+          });
+          res.end(
+            JSON.stringify({
+              error: "internal",
+              message: "Skill share codes API failed",
+            }),
+          );
+        }
+      });
+      return;
+    }
+
     const url = req.url ?? "/";
     const backend = route(url);
 

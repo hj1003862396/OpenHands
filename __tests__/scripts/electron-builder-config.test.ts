@@ -1,13 +1,20 @@
 // @vitest-environment node
 // The afterPack hook manipulates real directories and its contract is that
 // the packaged app's spawned servers can resolve their bare npm imports
-// (sirv, httpxy) OUTSIDE a repo checkout — Node's ESM resolution walks up
+// (sirv, httpxy, mysql2) OUTSIDE a repo checkout — Node's ESM resolution walks up
 // from the importing file, so a bundle tested inside the repo silently
 // resolves against the repo's node_modules and hides a missing package.
 // These tests therefore build a fake bundle under os.tmpdir() and verify
 // resolution with a real `node --eval` from that location.
 import { spawnSync } from "node:child_process";
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import {
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
@@ -15,7 +22,7 @@ import config from "../../electron-builder.config.mjs";
 
 const afterPack = config.afterPack as (ctx: unknown) => Promise<void>;
 
-const PRODUCT_FILENAME = "OpenHands Agent Canvas";
+const PRODUCT_FILENAME = "skillsdog";
 
 function makeContext(platform: string, appOutDir: string) {
   return {
@@ -33,14 +40,18 @@ function appDirFor(platform: string, appOutDir: string) {
 }
 
 /**
- * Run `await import("sirv"); await import("httpxy")` with a real Node
+ * Run `await import("sirv"); await import("httpxy"); await import("mysql2/promise")` with a real Node
  * process whose cwd is the packaged app dir — exactly how the spawned
  * static-server/ingress scripts resolve their imports at runtime.
  */
 function resolveRuntimeImports(appDir: string) {
   return spawnSync(
     process.execPath,
-    ["--input-type=module", "-e", 'await import("sirv"); await import("httpxy");'],
+    [
+      "--input-type=module",
+      "-e",
+      'await import("sirv"); await import("httpxy"); await import("mysql2/promise");',
+    ],
     { cwd: appDir, stdio: "pipe" },
   );
 }
@@ -92,8 +103,15 @@ describe("electron-builder afterPack hook", () => {
     await afterPack(makeContext("linux", tmp));
 
     expect(existsSync(junkPkg)).toBe(false);
-    expect(existsSync(join(appDir, "node_modules", "sirv", "package.json"))).toBe(true);
-    expect(existsSync(join(appDir, "node_modules", "httpxy", "package.json"))).toBe(true);
+    expect(
+      existsSync(join(appDir, "node_modules", "sirv", "package.json")),
+    ).toBe(true);
+    expect(
+      existsSync(join(appDir, "node_modules", "httpxy", "package.json")),
+    ).toBe(true);
+    expect(
+      existsSync(join(appDir, "node_modules", "mysql2", "package.json")),
+    ).toBe(true);
   });
 });
 
@@ -109,7 +127,10 @@ describe("electron-builder afterPack hook", () => {
 describe("desktop app name", () => {
   it("keeps electron/package.json productName in sync with the builder config", () => {
     const appManifest = JSON.parse(
-      readFileSync(join(import.meta.dirname, "../../electron/package.json"), "utf8"),
+      readFileSync(
+        join(import.meta.dirname, "../../electron/package.json"),
+        "utf8",
+      ),
     );
 
     expect(appManifest.productName).toBe(config.productName);

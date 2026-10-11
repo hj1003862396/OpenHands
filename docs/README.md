@@ -7,5 +7,6 @@ This directory contains the project documentation.
 - [Development guide](./DEVELOPMENT.md)
 - [Canvas Extensions manual testing](./CANVAS_EXTENSIONS_TESTING.md)
 - [Self-hosting guide](./SELF_HOSTING.md)
+- [Skill share codes](./skill-share-codes.md): MySQL-backed 6-digit codes so one computer can redeem a skill created on another.
 - [Integrating DefenseClaw](./DefenseClaw.md): run the DefenseClaw security governance layer alongside the Agent Server.
 - [Testing matrix](./TESTING_MATRIX.md): release smoke-test coverage across installers, operating systems, and agents.
